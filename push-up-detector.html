@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Push-Up Counter - Optimized</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transform: scaleX(-1);
+            image-rendering: optimizeSpeed;
+        }
+
+        #video {
+            display: none;
+        }
+
+        #stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 240px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .count {
+            font-size: 56px;
+            font-weight: 700;
+            color: #00ff88;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stage {
+            font-size: 20px;
+            color: #888;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .stage.down {
+            color: #ff6b6b;
+        }
+
+        .stage.up {
+            color: #00ff88;
+        }
+
+        .metrics {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .angle-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .angle-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b 0%, #ffd93d 50%, #00ff88 100%);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .angle-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .angle-marker {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .form-indicator {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .form-indicator.good {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .form-indicator.warning {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .form-indicator.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.4);
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 25px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 15px;
+            max-width: 400px;
+        }
+
+        .performance-mode {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+        }
+
+        .fps {
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            #stats {
+                top: 10px;
+                left: 10px;
+                padding: 20px;
+                min-width: 180px;
+            }
+            
+            .count {
+                font-size: 42px;
+            }
+            
+            .controls {
+                bottom: 15px;
+                gap: 10px;
+            }
+            
+            button {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+            
+            .performance-mode {
+                display: none;
+            }
+        }
+
+        /* Pulse animation for new rep */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .count.pulse {
+            animation: pulse 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <video id="video" playsinline></video>
+        <canvas id="canvas"></canvas>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Loading MoveNet Lightning Model...</p>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">Optimizing for performance...</p>
+        </div>
+        
+        <div id="stats" style="display: none;">
+            <div class="count">0</div>
+            <div class="stage">Ready to Start</div>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Elbow Angle</div>
+                    <div class="angle-bar">
+                        <div class="angle-fill"></div>
+                        <div class="angle-markers">
+                            <div class="angle-marker" style="left: 25%"></div>
+                            <div class="angle-marker" style="left: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="metric">
+                    <div class="metric-label">Form Quality</div>
+                    <div class="metric-value" id="formQuality">--</div>
+                </div>
+                
+                <div class="metric">
+                    <div class="metric-label">Rep Time</div>
+                    <div class="metric-value" id="repTime">--</div>
+                </div>
+            </div>
+            
+            <div class="form-indicator" id="formIndicator" style="display: none;"></div>
+        </div>
+        
+        <div class="performance-mode" id="performanceMode" style="display: none;">
+            <span class="fps">30 FPS</span> | <span id="latency">0ms</span>
+        </div>
+        
+        <div class="controls" style="display: none;">
+            <button onclick="pushUpCounter.reset()">Reset Count</button>
+            <button onclick="pushUpCounter.toggleCamera()">Switch Camera</button>
+            <button onclick="pushUpCounter.toggleSound()" id="soundBtn">Sound: ON</button>
+            <button onclick="pushUpCounter.togglePerformanceMode()">Performance</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.0/dist/pose-detection.min.js"></script>
+    <script>
+        class PushUpCounter {
+            constructor() {
+                // Core components
+                this.detector = null;
+                this.video = null;
+                this.canvas = null;
+                this.ctx = null;
+                this.animationId = null;
+                this.facingMode = 'user';
+                
+                // Performance optimization
+                this.frameSkip = 0;
+                this.maxFrameSkip = 2;
+                this.lastFrameTime = 0;
+                this.fps = 30;
+                this.performanceMode = false;
+                
+                // Push-up tracking
+                this.pushUpCount = 0;
+                this.stage = 'up';
+                this.repStartTime = 0;
+                this.lastRepTime = 0;
+                
+                // Smoothing buffers
+                this.angleBuffer = [];
+                this.bufferSize = 5;
+                this.confidenceBuffer = [];
+                this.shoulderYBuffer = [];
+                
+                // Thresholds
+                this.ANGLE_THRESHOLD_DOWN = 90;
+                this.ANGLE_THRESHOLD_UP = 160;
+                this.CONFIDENCE_THRESHOLD = 0.3;
+                this.MIN_SHOULDER_MOVEMENT = 20;
+                
+                // Audio
+                this.soundEnabled = true;
+                this.audioContext = null;
+                
+                // Form analysis
+                this.formQuality = 100;
+                this.formErrors = [];
+            }
+            
+            async init() {
+                try {
+                    this.video = document.getElementById('video');
+                    this.canvas = document.getElementById('canvas');
+                    this.ctx = this.canvas.getContext('2d', { 
+                        alpha: false,
+                        desynchronized: true
+                    });
+                    
+                    // Initialize audio
+                    this.initAudio();
+                    
+                    // Optimize TensorFlow.js for mobile
+                    await tf.setBackend('webgl');
+                    await tf.ready();
+                    
+                    // Configure MoveNet Lightning for optimal performance
+                    const detectorConfig = {
+                        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+                        enableSmoothing: true,
+                        minPoseScore: 0.25,
+                        multiPoseMaxDimension: 256,
+                        enableTracking: true,
+                        trackerType: poseDetection.TrackerType.BoundingBox
+                    };
+                    
+                    this.detector = await poseDetection.createDetector(
+                        poseDetection.SupportedModels.MoveNet,
+                        detectorConfig
+                    );
+                    
+                    await this.setupCamera();
+                    
+                    // Hide loading, show UI
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('stats').style.display = 'block';
+                    document.querySelector('.controls').style.display = 'flex';
+                    
+                    // Check device performance
+                    this.checkPerformance();
+                    
+                    // Start detection loop
+                    this.detectPose();
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    this.showError('Failed to initialize. Please ensure camera permissions are granted and refresh the page.');
+                }
+            }
+            
+            initAudio() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            playSound(frequency, duration) {
+                if (!this.soundEnabled || !this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+            }
+            
+            async setupCamera() {
+                const constraints = {
+                    video: {
+                        facingMode: this.facingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30, max: 30 }
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                this.video.srcObject = stream;
+                
+                await new Promise(resolve => {
+                    this.video.onloadedmetadata = () => {
+                        this.video.play();
+                        resolve();
+                    };
+                });
+                
+                // Set canvas size
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+            }
+            
+            checkPerformance() {
+                // Simple performance check based on initial frame times
+                let frameCount = 0;
+                let totalTime = 0;
+                const startTime = performance.now();
+                
+                const measurePerformance = () => {
+                    frameCount++;
+                    if (frameCount > 30) {
+                        totalTime = performance.now() - startTime;
+                        const avgFrameTime = totalTime / frameCount;
+                        
+                        if (avgFrameTime > 50) { // Less than 20 FPS
+                            this.maxFrameSkip = 3;
+                            console.log('Low performance detected, enabling frame skipping');
+                        }
+                    } else {
+                        requestAnimationFrame(measurePerformance);
+                    }
+                };
+                
+                requestAnimationFrame(measurePerformance);
+            }
+            
+            calculateAngle(a, b, c) {
+                const radians = Math.atan2(c.y - b.y, c.x - b.x) - 
+                               Math.atan2(a.y - b.y, a.x - b.x);
+                let angle = Math.abs(radians * 180.0 / Math.PI);
+                if (angle > 180.0) angle = 360 - angle;
+                return angle;
+            }
+            
+            smoothValue(buffer, value, maxSize) {
+                buffer.push(value);
+                if (buffer.length > maxSize) buffer.shift();
+                return buffer.reduce((a, b) => a + b) / buffer.length;
+            }
+            
+            analyzeForm(keypoints) {
+                this.formErrors = [];
+                let quality = 100;
+                
+                // Check body alignment
+                const shoulderLine = Math.abs(keypoints[5].y - keypoints[6].y);
+                const hipLine = Math.abs(keypoints[11].y - keypoints[12].y);
+                
+                if (shoulderLine > 30) {
+                    this.formErrors.push('Keep shoulders level');
+                    quality -= 20;
+                }
+                
+                if (hipLine > 40) {
+                    this.formErrors.push('Keep hips aligned');
+                    quality -= 20;
+                }
+                
+                // Check if body is horizontal enough
+                const avgShoulderY = (keypoints[5].y + keypoints[6].y) / 2;
+                const avgHipY = (keypoints[11].y + keypoints[12].y) / 2;
+                const bodyAngle = Math.abs(avgShoulderY - avgHipY);
+                
+                if (bodyAngle > 100) {
+                    this.formErrors.push('Keep body straight');
+                    quality -= 30;
+                }
+                
+                this.formQuality = Math.max(0, quality);
+                this.updateFormDisplay();
+            }
+            
+            updateFormDisplay() {
+                const qualityEl = document.getElementById('formQuality');
+                const indicatorEl = document.getElementById('formIndicator');
+                
+                qualityEl.textContent = `${this.formQuality}%`;
+                
+                if (this.formErrors.length > 0) {
+                    indicatorEl.style.display = 'block';
+                    indicatorEl.textContent = this.formErrors[0];
+                    
+                    if (this.formQuality >= 80) {
+                        indicatorEl.className = 'form-indicator good';
+                    } else if (this.formQuality >= 50) {
+                        indicatorEl.className = 'form-indicator warning';
+                    } else {
+                        indicatorEl.className = 'form-indicator error';
+                    }
+                } else {
+                    indicatorEl.style.display = 'none';
+                }
+            }
+            
+            drawOptimized(keypoints) {
+                // Only draw essential elements for performance
+                const connections = [
+                    [5, 7], [7, 9], // Left arm
+                    [6, 8], [8, 10], // Right arm
+                    [5, 6], [11, 12], // Shoulders and hips
+                    [5, 11], [6, 12] // Core
+                ];
+                
+                // Set styles once
+                this.ctx.strokeStyle = '#00ff88';
+                this.ctx.fillStyle = '#00ff88';
+                this.ctx.lineWidth = 2;
+                
+                // Draw connections
+                this.ctx.beginPath();
+                connections.forEach(([start, end]) => {
+                    const kp1 = keypoints[start];
+                    const kp2 = keypoints[end];
+                    
+                    if (kp1.score > this.CONFIDENCE_THRESHOLD && kp2.score > this.CONFIDENCE_THRESHOLD) {
+                        this.ctx.moveTo(kp1.x, kp1.y);
+                        this.ctx.lineTo(kp2.x, kp2.y);
+                    }
+                });
+                this.ctx.stroke();
+                
+                // Draw key points only
+                const keyPoints = [5, 6, 7, 8, 9, 10, 11, 12];
+                keyPoints.forEach(idx => {
+                    const kp = keypoints[idx];
+                    if (kp.score > this.CONFIDENCE_THRESHOLD) {
+                        this.ctx.beginPath();
+                        this.ctx.arc(kp.x, kp.y, 4, 0, 2 * Math.PI);
+                        this.ctx.fill();
+                    }
+                });
+            }
+            
+            detectPushUp(keypoints) {
+                // Keypoint indices for MoveNet
+                const LEFT_SHOULDER = 5;
+                const RIGHT_SHOULDER = 6;
+                const LEFT_ELBOW = 7;
+                const RIGHT_ELBOW = 8;
+                const LEFT_WRIST = 9;
+                const RIGHT_WRIST = 10;
+                
+                // Check minimum confidence
+                const requiredPoints = [
+                    keypoints[LEFT_SHOULDER],
+                    keypoints[LEFT_ELBOW],
+                    keypoints[LEFT_WRIST]
+                ];
+                
+                if (!requiredPoints.every(kp => kp.score > this.CONFIDENCE_THRESHOLD)) {
+                    return;
+                }
+                
+                // Calculate angles for both arms
+                let angle = this.calculateAngle(
+                    keypoints[LEFT_SHOULDER],
+                    keypoints[LEFT_ELBOW],
+                    keypoints[LEFT_WRIST]
+                );
+                
+                // Average with right arm if available
+                if (keypoints[RIGHT_SHOULDER].score > this.CONFIDENCE_THRESHOLD &&
+                    keypoints[RIGHT_ELBOW].score > this.CONFIDENCE_THRESHOLD &&
+                    keypoints[RIGHT_WRIST].score > this.CONFIDENCE_THRESHOLD) {
+                    
+                    const rightAngle = this.calculateAngle(
+                        keypoints[RIGHT_SHOULDER],
+                        keypoints[RIGHT_ELBOW],
+                        keypoints[RIGHT_WRIST]
+                    );
+                    
+                    angle = (angle + rightAngle) / 2;
+                }
+                
+                // Smooth angle
+                const smoothedAngle = this.smoothValue(this.angleBuffer, angle, this.bufferSize);
+                
+                // Track vertical movement
+                const shoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
+                this.smoothValue(this.shoulderYBuffer, shoulderY, 10);
+                
+                const movement = this.shoulderYBuffer.length > 5 ? 
+                    Math.max(...this.shoulderYBuffer) - Math.min(...this.shoulderYBuffer) : 0;
+                
+                // Update angle visualization
+                const progress = (smoothedAngle - 60) / 120;
+                document.querySelector('.angle-fill').style.width = 
+                    `${Math.max(0, Math.min(100, progress * 100))}%`;
+                
+                // State machine with hysteresis
+                if (movement > this.MIN_SHOULDER_MOVEMENT) {
+                    if (this.stage === 'up' && smoothedAngle < this.ANGLE_THRESHOLD_DOWN - 5) {
+                        this.stage = 'down';
+                        this.repStartTime = Date.now();
+                        document.querySelector('.stage').textContent = 'Going Down...';
+                        document.querySelector('.stage').className = 'stage down';
+                        this.playSound(440, 0.1); // A4 note
+                    } else if (this.stage === 'down' && smoothedAngle > this.ANGLE_THRESHOLD_UP + 5) {
+                        this.stage = 'up';
+                        this.pushUpCount++;
+                        this.lastRepTime = (Date.now() - this.repStartTime) / 1000;
+                        
+                        // Update UI
+                        const countEl = document.querySelector('.count');
+                        countEl.textContent = this.pushUpCount;
+                        countEl.classList.add('pulse');
+                        setTimeout(() => countEl.classList.remove('pulse'), 300);
+                        
+                        document.querySelector('.stage').textContent = 'Great Rep!';
+                        document.querySelector('.stage').className = 'stage up';
+                        document.getElementById('repTime').textContent = `${this.lastRepTime.toFixed(1)}s`;
+                        
+                        // Audio feedback
+                        this.playSound(880, 0.2); // A5 note
+                        
+                        // Haptic feedback
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate([50, 50, 50]);
+                        }
+                    }
+                }
+                
+                // Analyze form
+                this.analyzeForm(keypoints);
+            }
+            
+            async detectPose() {
+                if (!this.detector || !this.video) return;
+                
+                const currentTime = performance.now();
+                const deltaTime = currentTime - this.lastFrameTime;
+                
+                // Frame skipping for performance
+                if (this.performanceMode && this.frameSkip < this.maxFrameSkip) {
+                    this.frameSkip++;
+                } else {
+                    this.frameSkip = 0;
+                    
+                    // Clear and draw video
+                    this.ctx.save();
+                    this.ctx.scale(-1, 1);
+                    this.ctx.translate(-this.canvas.width, 0);
+                    this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.restore();
+                    
+                    try {
+                        const startDetection = performance.now();
+                        const poses = await this.detector.estimatePoses(this.video);
+                        const detectionTime = performance.now() - startDetection;
+                        
+                        if (poses.length > 0) {
+                            const pose = poses[0];
+                            this.drawOptimized(pose.keypoints);
+                            this.detectPushUp(pose.keypoints);
+                        }
+                        
+                        // Update performance metrics
+                        if (this.performanceMode) {
+                            this.fps = Math.round(1000 / deltaTime);
+                            document.querySelector('.fps').textContent = `${this.fps} FPS`;
+                            document.getElementById('latency').textContent = `${Math.round(detectionTime)}ms`;
+                        }
+                    } catch (error) {
+                        console.error('Pose detection error:', error);
+                    }
+                }
+                
+                this.lastFrameTime = currentTime;
+                this.animationId = requestAnimationFrame(() => this.detectPose());
+            }
+            
+            reset() {
+                this.pushUpCount = 0;
+                this.stage = 'up';
+                this.angleBuffer = [];
+                this.shoulderYBuffer = [];
+                this.formQuality = 100;
+                this.formErrors = [];
+                
+                document.querySelector('.count').textContent = '0';
+                document.querySelector('.stage').textContent = 'Ready to Start';
+                document.querySelector('.stage').className = 'stage';
+                document.getElementById('formQuality').textContent = '--';
+                document.getElementById('repTime').textContent = '--';
+                document.getElementById('formIndicator').style.display = 'none';
+                
+                this.playSound(660, 0.3); // E5 note
+            }
+            
+            async toggleCamera() {
+                this.facingMode = this.facingMode === 'user' ? 'environment' : 'user';
+                
+                // Stop current stream
+                if (this.video.srcObject) {
+                    this.video.srcObject.getTracks().forEach(track => track.stop());
+                }
+                
+                // Restart with new camera
+                await this.setupCamera();
+            }
+            
+            toggleSound() {
+                this.soundEnabled = !this.soundEnabled;
+                document.getElementById('soundBtn').textContent = 
+                    `Sound: ${this.soundEnabled ? 'ON' : 'OFF'}`;
+                document.getElementById('soundBtn').classList.toggle('active', this.soundEnabled);
+            }
+            
+            togglePerformanceMode() {
+                this.performanceMode = !this.performanceMode;
+                document.getElementById('performanceMode').style.display = 
+                    this.performanceMode ? 'block' : 'none';
+            }
+            
+            showError(message) {
+                document.getElementById('loading').innerHTML = `
+                    <div class="error">
+                        <h3>⚠️ Error</h3>
+                        <p>${message}</p>
+                        <button onclick="location.reload()" style="margin-top: 20px;">
+                            Reload Page
+                        </button>
+                    </div>
+                `;
+            }
+            
+            cleanup() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                if (this.video && this.video.srcObject) {
+                    this.video.srcObject.getTracks().forEach(track => track.stop());
+                }
+                if (this.audioContext) {
+                    this.audioContext.close();
+                }
+            }
+        }
+        
+        // Initialize the app
+        const pushUpCounter = new PushUpCounter();
+        window.addEventListener('load', () => pushUpCounter.init());
+        window.addEventListener('beforeunload', () => pushUpCounter.cleanup());
+    </script>
+</body>
+</html>
