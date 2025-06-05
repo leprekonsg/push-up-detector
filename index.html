@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Push-Up Counter - Optimized with Voice</title>
+    <title>AI Exercise Counter - Push-ups, Sit-ups & Squats</title>
     <style>
         * {
             margin: 0;
@@ -51,6 +51,15 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             min-width: 240px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .exercise-type {
+            font-size: 14px;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-weight: 600;
         }
 
         .count {
@@ -163,6 +172,41 @@
             border: 1px solid rgba(255, 107, 107, 0.3);
         }
 
+        .exercise-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 10px;
+            border-radius: 15px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .exercise-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .exercise-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .exercise-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.4);
+            color: #00ff88;
+        }
+
         .controls {
             position: absolute;
             bottom: 30px;
@@ -241,7 +285,7 @@
 
         .performance-mode {
             position: absolute;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
             background: rgba(10, 10, 10, 0.85);
             padding: 15px;
@@ -268,6 +312,13 @@
                 font-size: 42px;
             }
             
+            .exercise-selector {
+                top: auto;
+                bottom: 100px;
+                right: 50%;
+                transform: translateX(50%);
+            }
+            
             .controls {
                 bottom: 15px;
                 gap: 10px;
@@ -283,7 +334,6 @@
             }
         }
 
-        /* Pulse animation for new rep */
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -307,12 +357,13 @@
         </div>
         
         <div id="stats" style="display: none;">
+            <div class="exercise-type" id="exerciseType">PUSH-UPS</div>
             <div class="count">0</div>
             <div class="stage">Ready to Start</div>
             
             <div class="metrics">
                 <div class="metric">
-                    <div class="metric-label">Elbow Angle</div>
+                    <div class="metric-label" id="angleLabel">Elbow Angle</div>
                     <div class="angle-bar">
                         <div class="angle-fill"></div>
                         <div class="angle-markers">
@@ -336,22 +387,28 @@
             <div class="form-indicator" id="formIndicator" style="display: none;"></div>
         </div>
         
+        <div class="exercise-selector" style="display: none;">
+            <button class="exercise-btn active" onclick="exerciseCounter.setExercise('pushup')">Push-ups</button>
+            <button class="exercise-btn" onclick="exerciseCounter.setExercise('situp')">Sit-ups</button>
+            <button class="exercise-btn" onclick="exerciseCounter.setExercise('squat')">Squats</button>
+        </div>
+        
         <div class="performance-mode" id="performanceMode" style="display: none;">
             <span class="fps">30 FPS</span> | <span id="latency">0ms</span>
         </div>
         
         <div class="controls" style="display: none;">
-            <button onclick="pushUpCounter.reset()">Reset Count</button>
-            <button onclick="pushUpCounter.toggleCamera()">Switch Camera</button>
-            <button onclick="pushUpCounter.toggleSound()" id="soundBtn">Sound: ON</button>
-            <button onclick="pushUpCounter.togglePerformanceMode()">Performance</button>
+            <button onclick="exerciseCounter.reset()">Reset Count</button>
+            <button onclick="exerciseCounter.toggleCamera()">Switch Camera</button>
+            <button onclick="exerciseCounter.toggleSound()" id="soundBtn">Sound: ON</button>
+            <button onclick="exerciseCounter.togglePerformanceMode()">Performance</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.0/dist/pose-detection.min.js"></script>
     <script>
-        class PushUpCounter {
+        class ExerciseCounter {
             constructor() {
                 // Core components
                 this.detector = null;
@@ -361,39 +418,60 @@
                 this.animationId = null;
                 this.facingMode = 'user';
                 
+                // Exercise mode
+                this.exerciseMode = 'pushup'; // 'pushup', 'situp', 'squat'
+                
                 // Performance optimization
                 this.frameSkip = 0;
-                this.maxFrameSkip = 2; // Start with a moderate value
+                this.maxFrameSkip = 2;
                 this.lastFrameTime = 0;
                 this.fps = 30;
                 this.performanceMode = false;
                 
-                // Push-up tracking
-                this.pushUpCount = 0;
-                this.stage = 'up'; // Initial stage
+                // Exercise tracking
+                this.exerciseCount = 0;
+                this.stage = 'up';
                 this.repStartTime = 0;
                 this.lastRepTime = 0;
                 
                 // Smoothing buffers
                 this.angleBuffer = [];
-                this.bufferSize = 5; // Smooth over 5 frames
-                this.confidenceBuffer = []; // Could be used for overall pose confidence
-                this.shoulderYBuffer = []; // For tracking vertical movement
+                this.bufferSize = 5;
+                this.confidenceBuffer = [];
+                this.movementBuffer = [];
                 
-                // Thresholds
-                this.ANGLE_THRESHOLD_DOWN = 90; // Degrees: considered "down" if elbow angle is less than this
-                this.ANGLE_THRESHOLD_UP = 160;  // Degrees: considered "up" if elbow angle is greater than this
-                this.CONFIDENCE_THRESHOLD = 0.3; // Minimum confidence for keypoints to be considered valid
-                this.MIN_SHOULDER_MOVEMENT = 20; // Minimum vertical pixel movement of shoulders to register a rep cycle
+                // Exercise-specific thresholds
+                this.thresholds = {
+                    pushup: {
+                        angleDown: 90,
+                        angleUp: 160,
+                        minMovement: 20,
+                        angleLabel: 'Elbow Angle'
+                    },
+                    situp: {
+                        angleDown: 30,  // Torso close to ground
+                        angleUp: 80,    // Torso raised
+                        minMovement: 30,
+                        angleLabel: 'Torso Angle'
+                    },
+                    squat: {
+                        angleDown: 130,  // not so deep squat
+                        angleUp: 160,   // Standing
+                        minMovement: 30,
+                        angleLabel: 'Knee Angle'
+                    }
+                };
+                
+                this.CONFIDENCE_THRESHOLD = 0.3;
                 
                 // Audio
                 this.soundEnabled = true;
                 this.audioContext = null;
                 
                 // Form analysis
-                this.formQuality = 100; // Start with perfect form
+                this.formQuality = 100;
                 this.formErrors = [];
-                this.previousFormError = null; // To track changes in form errors for speech
+                this.previousFormError = null;
             }
             
             async init() {
@@ -401,25 +479,22 @@
                     this.video = document.getElementById('video');
                     this.canvas = document.getElementById('canvas');
                     this.ctx = this.canvas.getContext('2d', { 
-                        alpha: false,      // No transparency needed, can improve performance
-                        desynchronized: true // Hint for lower latency on some browsers
+                        alpha: false,
+                        desynchronized: true
                     });
                     
-                    // Initialize audio
                     this.initAudio();
                     
-                    // Optimize TensorFlow.js for mobile
-                    await tf.setBackend('webgl'); // Use WebGL backend for GPU acceleration
-                    await tf.ready(); // Ensure backend is ready
+                    await tf.setBackend('webgl');
+                    await tf.ready();
                     
-                    // Configure MoveNet Lightning for optimal performance
                     const detectorConfig = {
                         modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-                        enableSmoothing: true,      // Model-internal smoothing
-                        minPoseScore: 0.25,         // Minimum confidence for the overall pose
-                        multiPoseMaxDimension: 256, // Relevant for multi-pose, but good to keep
-                        enableTracking: true,       // Useful if the model supports it for smoother tracking between frames
-                        trackerType: poseDetection.TrackerType.BoundingBox // Default tracker
+                        enableSmoothing: true,
+                        minPoseScore: 0.25,
+                        multiPoseMaxDimension: 256,
+                        enableTracking: true,
+                        trackerType: poseDetection.TrackerType.BoundingBox
                     };
                     
                     this.detector = await poseDetection.createDetector(
@@ -429,17 +504,14 @@
                     
                     await this.setupCamera();
                     
-                    // Hide loading, show UI
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('stats').style.display = 'block';
+                    document.querySelector('.exercise-selector').style.display = 'flex';
                     document.querySelector('.controls').style.display = 'flex';
                     
-                    this.speak("Ready to start", true);
-
-                    // Check device performance (simple initial check)
-                    this.checkPerformance();
+                    this.speak("Ready to start pushups", true);
                     
-                    // Start detection loop
+                    this.checkPerformance();
                     this.detectPose();
                 } catch (error) {
                     console.error('Initialization error:', error);
@@ -453,7 +525,7 @@
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 } catch (e) {
                     console.warn("Web Audio API not supported.", e);
-                    this.soundEnabled = false; // Disable sound if context fails
+                    this.soundEnabled = false;
                     document.getElementById('soundBtn').textContent = 'Sound: OFF';
                     document.getElementById('soundBtn').classList.remove('active');
                 }
@@ -467,35 +539,25 @@
                 if (priority && window.speechSynthesis.speaking) {
                     window.speechSynthesis.cancel();
                 } else if (window.speechSynthesis.speaking && !priority) {
-                    // Don't interrupt non-priority speech with another non-priority one
                     return;
                 }
-
 
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-US'; 
                 utterance.rate = 1.1;     
                 utterance.pitch = 1.0;    
                 
-                // Attempt to get voices and select one (optional, can be tricky)
-                // const voices = window.speechSynthesis.getVoices();
-                // if (voices.length > 0) {
-                //     utterance.voice = voices.find(voice => voice.lang === 'en-US' && voice.name.includes('Google US English')) || voices.find(voice => voice.lang === 'en-US') || voices[0];
-                // }
-
-
                 window.speechSynthesis.speak(utterance);
             }
             
             playSound(frequency, duration) {
                 if (!this.soundEnabled || !this.audioContext || this.audioContext.state === 'suspended') {
-                    // Attempt to resume context if suspended (e.g., due to browser auto-play policies)
                     if (this.audioContext && this.audioContext.state === 'suspended') {
                         this.audioContext.resume().catch(e => console.warn("Could not resume audio context:", e));
                     }
                     return;
                 }
-                if (!this.audioContext) return; // Double check after potential resume
+                if (!this.audioContext) return;
                 
                 const oscillator = this.audioContext.createOscillator();
                 const gainNode = this.audioContext.createGain();
@@ -504,8 +566,8 @@
                 gainNode.connect(this.audioContext.destination);
                 
                 oscillator.frequency.value = frequency;
-                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime); // Start with a decent volume
-                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration); // Fade out
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
                 
                 oscillator.start(this.audioContext.currentTime);
                 oscillator.stop(this.audioContext.currentTime + duration);
@@ -515,9 +577,9 @@
                 const constraints = {
                     video: {
                         facingMode: this.facingMode,
-                        width: { ideal: 640 }, // Smaller resolution can improve performance
+                        width: { ideal: 640 },
                         height: { ideal: 480 },
-                        frameRate: { ideal: 30, max: 30 } // Request 30 FPS
+                        frameRate: { ideal: 30, max: 30 }
                     }
                 };
                 
@@ -525,10 +587,9 @@
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     this.video.srcObject = stream;
                     
-                    return new Promise(resolve => { // Return promise for chaining
+                    return new Promise(resolve => {
                         this.video.onloadedmetadata = () => {
                             this.video.play();
-                            // Set canvas size based on actual video dimensions to avoid distortion
                             this.canvas.width = this.video.videoWidth;
                             this.canvas.height = this.video.videoHeight;
                             resolve();
@@ -538,30 +599,29 @@
                     console.error("Error accessing camera:", err);
                     this.showError(`Camera access denied or unavailable: ${err.message}. Please check permissions.`);
                     this.speak("Camera error. Please check permissions.", true);
-                    throw err; // Re-throw to be caught by init's catch block
+                    throw err;
                 }
             }
             
             checkPerformance() {
-                // This is a very basic check. More sophisticated adaptive performance could be implemented.
                 let frameCount = 0;
                 const startTime = performance.now();
                 
                 const measure = () => {
                     frameCount++;
-                    if (frameCount < 30) { // Measure over a short period
+                    if (frameCount < 30) {
                         requestAnimationFrame(measure);
                     } else {
                         const totalTime = performance.now() - startTime;
                         const avgFrameTime = totalTime / frameCount;
-                        if (avgFrameTime > 66) { // Roughly less than 15 FPS
-                            this.maxFrameSkip = 3; // Increase frame skipping if performance is low
+                        if (avgFrameTime > 66) {
+                            this.maxFrameSkip = 3;
                             console.log('Low performance detected, increasing frame skipping.');
-                        } else if (avgFrameTime > 40) { // Roughly less than 25 FPS
+                        } else if (avgFrameTime > 40) {
                             this.maxFrameSkip = 2;
                             console.log('Moderate performance, setting frame skipping.');
                         } else {
-                            this.maxFrameSkip = 1; // Good performance
+                            this.maxFrameSkip = 1;
                         }
                     }
                 };
@@ -569,12 +629,11 @@
             }
             
             calculateAngle(a, b, c) {
-                // Calculate angle in degrees between three points (e.g., shoulder, elbow, wrist)
                 const radians = Math.atan2(c.y - b.y, c.x - b.x) - 
                                Math.atan2(a.y - b.y, a.x - b.x);
                 let angle = Math.abs(radians * 180.0 / Math.PI);
                 if (angle > 180.0) {
-                    angle = 360 - angle; // Ensure angle is < 180
+                    angle = 360 - angle;
                 }
                 return angle;
             }
@@ -582,28 +641,44 @@
             smoothValue(buffer, value, maxSize) {
                 buffer.push(value);
                 if (buffer.length > maxSize) {
-                    buffer.shift(); // Remove oldest value
+                    buffer.shift();
                 }
-                // Calculate simple moving average
                 return buffer.reduce((a, b) => a + b, 0) / buffer.length;
             }
             
-            analyzeForm(keypoints) {
-                const previousPrimaryError = this.formErrors.length > 0 ? this.formErrors[0] : null;
-                this.formErrors = [];
-                let quality = 100; // Start with 100% quality
+            setExercise(type) {
+                this.exerciseMode = type;
+                this.reset();
                 
-                // Keypoint indices for MoveNet (ensure these are correct for your model)
+                // Update UI
+                document.querySelectorAll('.exercise-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                const typeText = {
+                    'pushup': 'PUSHUPS',
+                    'situp': 'SITUPS',
+                    'squat': 'SQUATS'
+                };
+                
+                document.getElementById('exerciseType').textContent = typeText[type];
+                document.getElementById('angleLabel').textContent = this.thresholds[type].angleLabel;
+                
+                this.speak(`Switched to ${typeText[type].toLowerCase()}`, true);
+            }
+            
+            analyzeFormPushUp(keypoints) {
+                const previousError = this.formErrors.length > 0 ? this.formErrors[0] : null;
+                this.formErrors = [];
+                let quality = 100;
+                
                 const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
                 const LEFT_HIP = 11, RIGHT_HIP = 12;
-                // const LEFT_KNEE = 13, RIGHT_KNEE = 14; // If needed for more advanced checks
-                // const LEFT_ANKLE = 15, RIGHT_ANKLE = 16;
-
-                // Check body alignment (shoulders and hips should be relatively level)
-                // These thresholds are examples and might need tuning based on camera angle and distance
+                
                 if (keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD && keypoints[RIGHT_SHOULDER].score > this.CONFIDENCE_THRESHOLD) {
                     const shoulderYDiff = Math.abs(keypoints[LEFT_SHOULDER].y - keypoints[RIGHT_SHOULDER].y);
-                    if (shoulderYDiff > (this.canvas.height * 0.05)) { // e.g., 5% of canvas height
+                    if (shoulderYDiff > (this.canvas.height * 0.05)) {
                         this.formErrors.push('Keep shoulders level');
                         quality -= 20;
                     }
@@ -611,41 +686,151 @@
                 
                 if (keypoints[LEFT_HIP].score > this.CONFIDENCE_THRESHOLD && keypoints[RIGHT_HIP].score > this.CONFIDENCE_THRESHOLD) {
                     const hipYDiff = Math.abs(keypoints[LEFT_HIP].y - keypoints[RIGHT_HIP].y);
-                    if (hipYDiff > (this.canvas.height * 0.06)) { // e.g., 6% of canvas height
+                    if (hipYDiff > (this.canvas.height * 0.06)) {
                         this.formErrors.push('Keep hips aligned');
                         quality -= 20;
                     }
                 }
                 
-                // Check if body is relatively straight (avoid piking or sagging hips)
-                // Compare average shoulder Y, hip Y. A more robust check might involve ankles/knees.
                 if (keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD && keypoints[RIGHT_SHOULDER].score > this.CONFIDENCE_THRESHOLD &&
                     keypoints[LEFT_HIP].score > this.CONFIDENCE_THRESHOLD && keypoints[RIGHT_HIP].score > this.CONFIDENCE_THRESHOLD) {
                     
                     const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
                     const avgHipY = (keypoints[LEFT_HIP].y + keypoints[RIGHT_HIP].y) / 2;
                     
-                    // This is a simplified check. For a side view, you'd expect hips to be roughly in line with shoulders.
-                    // The threshold '100' from before was likely too large or arbitrary.
-                    // Let's use a relative threshold. For example, hips shouldn't be significantly higher or lower than shoulders.
                     const bodyAngleDiff = Math.abs(avgShoulderY - avgHipY);
-                    if (bodyAngleDiff > (this.canvas.height * 0.15)) { // e.g., if hips are 15% of canvas height above/below shoulders
+                    if (bodyAngleDiff > (this.canvas.height * 0.15)) {
                         this.formErrors.push('Keep body straight');
                         quality -= 30;
                     }
                 }
                 
-                this.formQuality = Math.max(0, quality); // Ensure quality doesn't go below 0
+                this.formQuality = Math.max(0, quality);
                 
                 if (this.formErrors.length > 0 && this.formErrors[0] !== this.previousFormError) {
-                    this.speak(this.formErrors[0], false); 
+                    this.speak(this.formErrors[0], false);
                     this.previousFormError = this.formErrors[0];
                 } else if (this.formErrors.length === 0 && this.previousFormError !== null) {
-                    // Optional: Announce when form is good again after an error
-                    // this.speak("Form looks good", false);
                     this.previousFormError = null;
                 }
-
+                
+                this.updateFormDisplay();
+            }
+            
+            analyzeFormSitUp(keypoints) {
+                const previousError = this.formErrors.length > 0 ? this.formErrors[0] : null;
+                this.formErrors = [];
+                let quality = 100;
+                
+                const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
+                const LEFT_HIP = 11, RIGHT_HIP = 12;
+                const LEFT_KNEE = 13, RIGHT_KNEE = 14;
+                
+                // Check if knees are bent (important for proper sit-up form)
+                if (keypoints[LEFT_HIP].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[LEFT_KNEE].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD) {
+                    
+                    const kneeAngle = this.calculateAngle(
+                        keypoints[LEFT_HIP], 
+                        keypoints[LEFT_KNEE], 
+                        {x: keypoints[LEFT_KNEE].x + 50, y: keypoints[LEFT_KNEE].y} // Approximate ankle position
+                    );
+                    
+                    if (kneeAngle > 120) {
+                        this.formErrors.push('Keep knees bent');
+                        quality -= 30;
+                    }
+                }
+                
+                // Check if hands are behind head or across chest
+                const LEFT_ELBOW = 7, RIGHT_ELBOW = 8;
+                const LEFT_WRIST = 9, RIGHT_WRIST = 10;
+                
+                if (keypoints[LEFT_WRIST].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[RIGHT_WRIST].score > this.CONFIDENCE_THRESHOLD) {
+                    
+                    const avgWristY = (keypoints[LEFT_WRIST].y + keypoints[RIGHT_WRIST].y) / 2;
+                    const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
+                    
+                    if (avgWristY > avgShoulderY + (this.canvas.height * 0.1)) {
+                        this.formErrors.push('Keep hands behind head or across chest');
+                        quality -= 20;
+                    }
+                }
+                
+                this.formQuality = Math.max(0, quality);
+                
+                if (this.formErrors.length > 0 && this.formErrors[0] !== this.previousFormError) {
+                    this.speak(this.formErrors[0], false);
+                    this.previousFormError = this.formErrors[0];
+                } else if (this.formErrors.length === 0 && this.previousFormError !== null) {
+                    this.previousFormError = null;
+                }
+                
+                this.updateFormDisplay();
+            }
+            
+            analyzeFormSquat(keypoints) {
+                const previousError = this.formErrors.length > 0 ? this.formErrors[0] : null;
+                this.formErrors = [];
+                let quality = 100;
+                
+                const LEFT_HIP = 11, RIGHT_HIP = 12;
+                const LEFT_KNEE = 13, RIGHT_KNEE = 14;
+                const LEFT_ANKLE = 15, RIGHT_ANKLE = 16;
+                const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
+                
+                // Check knee alignment (knees shouldn't go too far past toes)
+                if (keypoints[LEFT_KNEE].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[LEFT_ANKLE].score > this.CONFIDENCE_THRESHOLD) {
+                    
+                    const kneeX = keypoints[LEFT_KNEE].x;
+                    const ankleX = keypoints[LEFT_ANKLE].x;
+                    
+                    if (Math.abs(kneeX - ankleX) > (this.canvas.width * 0.1)) {
+                        this.formErrors.push('Keep knees aligned over feet');
+                        quality -= 25;
+                    }
+                }
+                
+                // Check if back is straight (shoulders should be above hips)
+                if (keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[LEFT_HIP].score > this.CONFIDENCE_THRESHOLD) {
+                    
+                    const shoulderX = keypoints[LEFT_SHOULDER].x;
+                    const hipX = keypoints[LEFT_HIP].x;
+                    
+                    if (Math.abs(shoulderX - hipX) > (this.canvas.width * 0.08)) {
+                        this.formErrors.push('Keep back straight');
+                        quality -= 30;
+                    }
+                }
+                
+                // Check feet width (should be shoulder-width apart)
+                if (keypoints[LEFT_ANKLE].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[RIGHT_ANKLE].score > this.CONFIDENCE_THRESHOLD &&
+                    keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD && 
+                    keypoints[RIGHT_SHOULDER].score > this.CONFIDENCE_THRESHOLD) {
+                    
+                    const feetWidth = Math.abs(keypoints[LEFT_ANKLE].x - keypoints[RIGHT_ANKLE].x);
+                    const shoulderWidth = Math.abs(keypoints[LEFT_SHOULDER].x - keypoints[RIGHT_SHOULDER].x);
+                    
+                    if (feetWidth < shoulderWidth * 0.8 || feetWidth > shoulderWidth * 1.3) {
+                        this.formErrors.push('Feet should be shoulder-width apart');
+                        quality -= 20;
+                    }
+                }
+                
+                this.formQuality = Math.max(0, quality);
+                
+                if (this.formErrors.length > 0 && this.formErrors[0] !== this.previousFormError) {
+                    this.speak(this.formErrors[0], false);
+                    this.previousFormError = this.formErrors[0];
+                } else if (this.formErrors.length === 0 && this.previousFormError !== null) {
+                    this.previousFormError = null;
+                }
+                
                 this.updateFormDisplay();
             }
             
@@ -657,10 +842,10 @@
                 
                 if (this.formErrors.length > 0) {
                     indicatorEl.style.display = 'block';
-                    indicatorEl.textContent = this.formErrors.join(', '); // Show all errors or just the first
+                    indicatorEl.textContent = this.formErrors.join(', ');
                     
                     if (this.formQuality >= 80) {
-                        indicatorEl.className = 'form-indicator good'; // Should not happen if errors exist, but for consistency
+                        indicatorEl.className = 'form-indicator good';
                     } else if (this.formQuality >= 50) {
                         indicatorEl.className = 'form-indicator warning';
                     } else {
@@ -668,38 +853,46 @@
                     }
                 } else {
                     indicatorEl.style.display = 'none';
-                    // Optional: If you want a "Good form!" message when no errors
-                    // indicatorEl.textContent = 'Good Form!';
-                    // indicatorEl.className = 'form-indicator good';
-                    // indicatorEl.style.display = 'block';
                 }
             }
             
             drawOptimized(keypoints) {
-                // Clear previous drawings
-                // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // Done by drawImage
+                let connections = [];
                 
-                // Draw video frame (already done in detectPose before this call)
-                // this.ctx.save();
-                // this.ctx.scale(-1, 1); // Flip horizontally for mirror view
-                // this.ctx.translate(-this.canvas.width, 0);
-                // this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-                // this.ctx.restore();
-
-                // Only draw essential elements for performance
-                const connections = [
-                    [5, 7], [7, 9],     // Left arm: Shoulder-Elbow, Elbow-Wrist
-                    [6, 8], [8, 10],    // Right arm: Shoulder-Elbow, Elbow-Wrist
-                    [5, 6],             // Shoulders
-                    [11, 12],           // Hips
-                    [5, 11], [6, 12]    // Torso: Shoulder-Hip connections
-                ];
+                switch(this.exerciseMode) {
+                    case 'pushup':
+                        connections = [
+                            [5, 7], [7, 9],     // Left arm
+                            [6, 8], [8, 10],    // Right arm
+                            [5, 6],             // Shoulders
+                            [11, 12],           // Hips
+                            [5, 11], [6, 12]    // Torso
+                        ];
+                        break;
+                    case 'situp':
+                        connections = [
+                            [5, 6],             // Shoulders
+                            [11, 12],           // Hips
+                            [5, 11], [6, 12],   // Torso
+                            [11, 13], [12, 14], // Hip to knee
+                            [13, 15], [14, 16]  // Knee to ankle
+                        ];
+                        break;
+                    case 'squat':
+                        connections = [
+                            [5, 6],             // Shoulders
+                            [11, 12],           // Hips
+                            [5, 11], [6, 12],   // Torso
+                            [11, 13], [12, 14], // Hip to knee
+                            [13, 15], [14, 16]  // Knee to ankle
+                        ];
+                        break;
+                }
                 
                 this.ctx.strokeStyle = '#00ff88';
                 this.ctx.fillStyle = '#00ff88';
-                this.ctx.lineWidth = 3; // Slightly thicker lines
+                this.ctx.lineWidth = 3;
                 
-                // Draw connections
                 this.ctx.beginPath();
                 connections.forEach(([startIdx, endIdx]) => {
                     const kp1 = keypoints[startIdx];
@@ -712,13 +905,15 @@
                 });
                 this.ctx.stroke();
                 
-                // Draw key points (only essential ones for push-ups)
-                const essentialKeyPointsIndices = [5, 6, 7, 8, 9, 10, 11, 12]; // Shoulders, Elbows, Wrists, Hips
-                essentialKeyPointsIndices.forEach(idx => {
+                const essentialKeypoints = this.exerciseMode === 'pushup' ? 
+                    [5, 6, 7, 8, 9, 10, 11, 12] : 
+                    [5, 6, 11, 12, 13, 14, 15, 16];
+                    
+                essentialKeypoints.forEach(idx => {
                     const kp = keypoints[idx];
                     if (kp.score > this.CONFIDENCE_THRESHOLD) {
                         this.ctx.beginPath();
-                        this.ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI); // Slightly larger dots
+                        this.ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
                         this.ctx.fill();
                     }
                 });
@@ -734,13 +929,10 @@
                     keypoints[RIGHT_SHOULDER], keypoints[RIGHT_ELBOW], keypoints[RIGHT_WRIST]
                 ];
                 
-                // Check if all essential keypoints for angle calculation are visible with enough confidence
                 if (!requiredKeypoints.every(kp => kp && kp.score > this.CONFIDENCE_THRESHOLD)) {
-                    // document.querySelector('.stage').textContent = 'Adjust position'; // Optional feedback
-                    return; // Not enough data to reliably detect push-up
+                    return;
                 }
                 
-                // Calculate angles for both arms
                 const leftAngle = this.calculateAngle(
                     keypoints[LEFT_SHOULDER], keypoints[LEFT_ELBOW], keypoints[LEFT_WRIST]
                 );
@@ -748,37 +940,34 @@
                     keypoints[RIGHT_SHOULDER], keypoints[RIGHT_ELBOW], keypoints[RIGHT_WRIST]
                 );
                 
-                // Use average angle or minimum if one arm is less bent (more conservative)
                 const angle = (leftAngle + rightAngle) / 2;
-                
                 const smoothedAngle = this.smoothValue(this.angleBuffer, angle, this.bufferSize);
                 
-                // Track vertical movement of shoulders for more robust rep detection
                 const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
-                this.smoothValue(this.shoulderYBuffer, avgShoulderY, 10); // Smooth over 10 frames
+                this.smoothValue(this.movementBuffer, avgShoulderY, 10);
                 
-                const movementRange = this.shoulderYBuffer.length >= 5 ? 
-                    Math.max(...this.shoulderYBuffer) - Math.min(...this.shoulderYBuffer) : 0;
+                const movementRange = this.movementBuffer.length >= 5 ? 
+                    Math.max(...this.movementBuffer) - Math.min(...this.movementBuffer) : 0;
                 
-                // Update angle visualization (progress from ~60 to ~180 degrees)
                 const angleProgress = Math.max(0, Math.min(100, ((smoothedAngle - 60) / (180 - 60)) * 100));
                 document.querySelector('.angle-fill').style.width = `${angleProgress}%`;
                 
-                // State machine for push-up detection with hysteresis
-                if (movementRange > this.MIN_SHOULDER_MOVEMENT) { // Ensure there's actual vertical movement
-                    if (this.stage === 'up' && smoothedAngle < (this.ANGLE_THRESHOLD_DOWN - 5)) { // -5 for hysteresis
+                const threshold = this.thresholds.pushup;
+                
+                if (movementRange > threshold.minMovement) {
+                    if (this.stage === 'up' && smoothedAngle < (threshold.angleDown - 5)) {
                         this.stage = 'down';
                         this.repStartTime = Date.now();
                         document.querySelector('.stage').textContent = 'Going Down...';
                         document.querySelector('.stage').className = 'stage down';
-                        this.playSound(440, 0.1); // A4 note for down
-                    } else if (this.stage === 'down' && smoothedAngle > (this.ANGLE_THRESHOLD_UP + 5)) { // +5 for hysteresis
+                        this.playSound(440, 0.1);
+                    } else if (this.stage === 'down' && smoothedAngle > (threshold.angleUp + 5)) {
                         this.stage = 'up';
-                        this.pushUpCount++;
+                        this.exerciseCount++;
                         this.lastRepTime = (Date.now() - this.repStartTime) / 1000;
                         
                         const countEl = document.querySelector('.count');
-                        countEl.textContent = this.pushUpCount;
+                        countEl.textContent = this.exerciseCount;
                         countEl.classList.add('pulse');
                         setTimeout(() => countEl.classList.remove('pulse'), 300);
                         
@@ -786,23 +975,182 @@
                         document.querySelector('.stage').className = 'stage up';
                         document.getElementById('repTime').textContent = `${this.lastRepTime.toFixed(1)}s`;
                         
-                        this.playSound(880, 0.2); // A5 note for up/rep
-                        this.speak(this.pushUpCount.toString(), true); // Speak the count
-
+                        this.playSound(880, 0.2);
+                        this.speak(this.exerciseCount.toString(), true);
+                        
                         if ('vibrate' in navigator) {
-                            navigator.vibrate([50, 30, 50]); // Slightly different vibration pattern
+                            navigator.vibrate([50, 30, 50]);
                         }
-                        // Reset shoulder buffer after a rep to require new movement for next rep
-                        this.shoulderYBuffer = []; 
+                        
+                        this.movementBuffer = [];
                     }
                 }
                 
-                // Always analyze form, regardless of push-up stage, if keypoints are available
-                this.analyzeForm(keypoints);
+                this.analyzeFormPushUp(keypoints);
+            }
+            
+            detectSitUp(keypoints) {
+                const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
+                const LEFT_HIP = 11, RIGHT_HIP = 12;
+                const LEFT_KNEE = 13, RIGHT_KNEE = 14;
+                
+                const requiredKeypoints = [
+                    keypoints[LEFT_SHOULDER], keypoints[RIGHT_SHOULDER],
+                    keypoints[LEFT_HIP], keypoints[RIGHT_HIP]
+                ];
+                
+                if (!requiredKeypoints.every(kp => kp && kp.score > this.CONFIDENCE_THRESHOLD)) {
+                    return;
+                }
+                
+                // Calculate torso angle relative to ground
+                const avgShoulderX = (keypoints[LEFT_SHOULDER].x + keypoints[RIGHT_SHOULDER].x) / 2;
+                const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
+                const avgHipX = (keypoints[LEFT_HIP].x + keypoints[RIGHT_HIP].x) / 2;
+                const avgHipY = (keypoints[LEFT_HIP].y + keypoints[RIGHT_HIP].y) / 2;
+                
+                // Calculate angle of torso relative to horizontal
+                const torsoAngle = Math.abs(Math.atan2(avgShoulderY - avgHipY, avgShoulderX - avgHipX) * 180 / Math.PI);
+                const smoothedAngle = this.smoothValue(this.angleBuffer, torsoAngle, this.bufferSize);
+                
+                // Track shoulder vertical movement
+                this.smoothValue(this.movementBuffer, avgShoulderY, 10);
+                
+                const movementRange = this.movementBuffer.length >= 5 ? 
+                    Math.max(...this.movementBuffer) - Math.min(...this.movementBuffer) : 0;
+                
+                // Update angle visualization (0-90 degrees for sit-ups)
+                const angleProgress = Math.max(0, Math.min(100, (smoothedAngle / 90) * 100));
+                document.querySelector('.angle-fill').style.width = `${angleProgress}%`;
+                
+                const threshold = this.thresholds.situp;
+                
+                if (movementRange > threshold.minMovement) {
+                    if (this.stage === 'down' && smoothedAngle > (threshold.angleUp - 5)) {
+                        this.stage = 'up';
+                        this.exerciseCount++;
+                        this.lastRepTime = (Date.now() - this.repStartTime) / 1000;
+                        
+                        const countEl = document.querySelector('.count');
+                        countEl.textContent = this.exerciseCount;
+                        countEl.classList.add('pulse');
+                        setTimeout(() => countEl.classList.remove('pulse'), 300);
+                        
+                        document.querySelector('.stage').textContent = 'Great Rep!';
+                        document.querySelector('.stage').className = 'stage up';
+                        document.getElementById('repTime').textContent = `${this.lastRepTime.toFixed(1)}s`;
+                        
+                        this.playSound(880, 0.2);
+                        this.speak(this.exerciseCount.toString(), true);
+                        
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate([50, 30, 50]);
+                        }
+                    } else if (this.stage === 'up' && smoothedAngle < (threshold.angleDown + 5)) {
+                        this.stage = 'down';
+                        this.repStartTime = Date.now();
+                        document.querySelector('.stage').textContent = 'Going Down...';
+                        document.querySelector('.stage').className = 'stage down';
+                        this.playSound(440, 0.1);
+                        
+                        this.movementBuffer = [];
+                    }
+                }
+                
+                this.analyzeFormSitUp(keypoints);
+            }
+            
+            detectSquat(keypoints) {
+                const LEFT_HIP = 11, RIGHT_HIP = 12;
+                const LEFT_KNEE = 13, RIGHT_KNEE = 14;
+                const LEFT_ANKLE = 15, RIGHT_ANKLE = 16;
+                
+                const requiredKeypoints = [
+                    keypoints[LEFT_HIP], keypoints[LEFT_KNEE], keypoints[LEFT_ANKLE],
+                    keypoints[RIGHT_HIP], keypoints[RIGHT_KNEE], keypoints[RIGHT_ANKLE]
+                ];
+                
+                if (!requiredKeypoints.every(kp => kp && kp.score > this.CONFIDENCE_THRESHOLD)) {
+                    return;
+                }
+                
+                // Calculate knee angles
+                const leftKneeAngle = this.calculateAngle(
+                    keypoints[LEFT_HIP], keypoints[LEFT_KNEE], keypoints[LEFT_ANKLE]
+                );
+                const rightKneeAngle = this.calculateAngle(
+                    keypoints[RIGHT_HIP], keypoints[RIGHT_KNEE], keypoints[RIGHT_ANKLE]
+                );
+                
+                const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2;
+                const smoothedAngle = this.smoothValue(this.angleBuffer, kneeAngle, this.bufferSize);
+                
+                // Track hip vertical movement
+                const avgHipY = (keypoints[LEFT_HIP].y + keypoints[RIGHT_HIP].y) / 2;
+                this.smoothValue(this.movementBuffer, avgHipY, 10);
+                
+                const movementRange = this.movementBuffer.length >= 5 ? 
+                    Math.max(...this.movementBuffer) - Math.min(...this.movementBuffer) : 0;
+                
+                // Update angle visualization
+                const threshold = this.thresholds.squat; // Get squat specific thresholds
+                let angleProgress = ((smoothedAngle - threshold.angleDown) / (threshold.angleUp - threshold.angleDown)) * 100;
+                angleProgress = Math.max(0, Math.min(100, angleProgress)); // Clamp between 0 and 100
+                document.querySelector('.angle-fill').style.width = `${angleProgress}%`;
+                
+                // const threshold = this.thresholds.squat; // This line is now above the angleProgress calculation
+                
+                if (movementRange > threshold.minMovement) {
+                    if (this.stage === 'up' && smoothedAngle < (threshold.angleDown + 5)) { // Note: logic uses angleDown + 5
+                        this.stage = 'down';
+                        this.repStartTime = Date.now();
+                        document.querySelector('.stage').textContent = 'Going Down...';
+                        document.querySelector('.stage').className = 'stage down';
+                        this.playSound(440, 0.1);
+                    } else if (this.stage === 'down' && smoothedAngle > (threshold.angleUp - 5)) { // Note: logic uses angleUp - 5
+                        this.stage = 'up';
+                        this.exerciseCount++;
+                        this.lastRepTime = (Date.now() - this.repStartTime) / 1000;
+                        
+                        const countEl = document.querySelector('.count');
+                        countEl.textContent = this.exerciseCount;
+                        countEl.classList.add('pulse');
+                        setTimeout(() => countEl.classList.remove('pulse'), 300);
+                        
+                        document.querySelector('.stage').textContent = 'Great Rep!';
+                        document.querySelector('.stage').className = 'stage up';
+                        document.getElementById('repTime').textContent = `${this.lastRepTime.toFixed(1)}s`;
+                        
+                        this.playSound(880, 0.2);
+                        this.speak(this.exerciseCount.toString(), true);
+                        
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate([50, 30, 50]);
+                        }
+                        
+                        this.movementBuffer = [];
+                    }
+                }
+                
+                this.analyzeFormSquat(keypoints);
+            }
+            
+            detectExercise(keypoints) {
+                switch(this.exerciseMode) {
+                    case 'pushup':
+                        this.detectPushUp(keypoints);
+                        break;
+                    case 'situp':
+                        this.detectSitUp(keypoints);
+                        break;
+                    case 'squat':
+                        this.detectSquat(keypoints);
+                        break;
+                }
             }
             
             async detectPose() {
-                if (!this.detector || !this.video || this.video.readyState < 2) { // Check video readyState
+                if (!this.detector || !this.video || this.video.readyState < 2) {
                     this.animationId = requestAnimationFrame(() => this.detectPose());
                     return;
                 }
@@ -810,36 +1158,28 @@
                 const currentTime = performance.now();
                 const deltaTime = currentTime - this.lastFrameTime;
                 
-                if (this.performanceMode && this.frameSkip < this.maxFrameSkip && deltaTime < (1000 / (this.fps + 5))) { // Skip if not enough time passed
+                if (this.performanceMode && this.frameSkip < this.maxFrameSkip && deltaTime < (1000 / (this.fps + 5))) {
                     this.frameSkip++;
                 } else {
                     this.frameSkip = 0;
                     
-                    // Draw video onto canvas (mirrored)
                     this.ctx.save();
-                    this.ctx.scale(-1, 1); // Flip horizontally
+                    this.ctx.scale(-1, 1);
                     this.ctx.translate(-this.canvas.width, 0);
                     this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-                    this.ctx.restore(); // Restore context to normal for drawing overlays
+                    this.ctx.restore();
                     
                     try {
                         const startDetection = performance.now();
-                        // Pass the canvas or video element to estimatePoses.
-                        // Using the video element directly can sometimes be more efficient.
                         const poses = await this.detector.estimatePoses(this.video, {
-                            flipHorizontal: false // Already handled by canvas transform
+                            flipHorizontal: false
                         });
                         const detectionTime = performance.now() - startDetection;
                         
                         if (poses && poses.length > 0 && poses[0].keypoints) {
-                            // Keypoints are already in canvas coordinates if video was used and canvas matches video dimensions.
-                            // If using canvas as input, ensure it's correctly transformed.
-                            // For simplicity, assuming keypoints are in the mirrored canvas space.
                             this.drawOptimized(poses[0].keypoints);
-                            this.detectPushUp(poses[0].keypoints);
+                            this.detectExercise(poses[0].keypoints);
                         } else {
-                            // Optional: Clear previous skeleton if no pose detected
-                            // this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height); // Redraw clean video
                             document.querySelector('.stage').textContent = 'No person detected';
                         }
                         
@@ -850,7 +1190,6 @@
                         }
                     } catch (error) {
                         console.error('Pose detection error:', error);
-                        // Potentially stop loop or show error
                     }
                 }
                 
@@ -859,10 +1198,10 @@
             }
             
             reset() {
-                this.pushUpCount = 0;
-                this.stage = 'up';
+                this.exerciseCount = 0;
+                this.stage = this.exerciseMode === 'situp' ? 'down' : 'up';
                 this.angleBuffer = [];
-                this.shoulderYBuffer = [];
+                this.movementBuffer = [];
                 this.formQuality = 100;
                 this.formErrors = [];
                 this.previousFormError = null;
@@ -875,8 +1214,10 @@
                 document.getElementById('formIndicator').style.display = 'none';
                 document.querySelector('.angle-fill').style.width = '0%';
                 
-                this.playSound(660, 0.3); // E5 note for reset
-                this.speak("Count reset. Ready to start", true);
+                this.playSound(660, 0.3);
+                const exerciseName = this.exerciseMode === 'pushup' ? 'pushups' : 
+                                   this.exerciseMode === 'situp' ? 'situps' : 'squats';
+                this.speak(`Count reset. Ready for ${exerciseName}`, true);
             }
             
             async toggleCamera() {
@@ -887,7 +1228,7 @@
                 }
                 
                 try {
-                    await this.setupCamera(); // Re-setup camera
+                    await this.setupCamera();
                 } catch (e) {
                     // Error already handled in setupCamera
                 }
@@ -903,7 +1244,6 @@
                     window.speechSynthesis.cancel(); 
                 } else if (this.soundEnabled) {
                     this.speak("Sound on", false);
-                     // Resume AudioContext if it was suspended and sound is turned on
                     if (this.audioContext && this.audioContext.state === 'suspended') {
                         this.audioContext.resume().catch(e => console.warn("Could not resume audio context:", e));
                     }
@@ -927,8 +1267,7 @@
                         </button>
                     </div>
                 `;
-                loadingDiv.style.display = 'block'; // Ensure it's visible
-                // Stop further processing if a critical error is shown
+                loadingDiv.style.display = 'block';
                 if (this.animationId) {
                     cancelAnimationFrame(this.animationId);
                 }
@@ -951,14 +1290,11 @@
         }
         
         // Initialize the app
-        const pushUpCounter = new PushUpCounter();
+        const exerciseCounter = new ExerciseCounter();
         window.addEventListener('load', () => {
-            // It's good practice to initialize things that require user interaction (like AudioContext)
-            // after a user gesture, but for now, we'll init directly.
-            // Some browsers might suspend AudioContext until a user clicks.
-            pushUpCounter.init();
+            exerciseCounter.init();
         });
-        window.addEventListener('beforeunload', () => pushUpCounter.cleanup());
+        window.addEventListener('beforeunload', () => exerciseCounter.cleanup());
     </script>
 </body>
 </html>
