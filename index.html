@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Exercise Counter - Push-ups, Sit-ups & Squats</title>
+    <title>STF AI(爱) Exercise Counter - Push-ups, Sit-ups, Squats & Jumping Jacks</title>
     <style>
         * {
             margin: 0;
@@ -317,6 +317,8 @@
                 bottom: 100px;
                 right: 50%;
                 transform: translateX(50%);
+                flex-wrap: wrap;
+                justify-content: center;
             }
             
             .controls {
@@ -391,6 +393,7 @@
             <button class="exercise-btn active" onclick="exerciseCounter.setExercise('pushup')">Push-ups</button>
             <button class="exercise-btn" onclick="exerciseCounter.setExercise('situp')">Sit-ups</button>
             <button class="exercise-btn" onclick="exerciseCounter.setExercise('squat')">Squats</button>
+            <button class="exercise-btn" onclick="exerciseCounter.setExercise('jumpingjack')">Jumping Jacks</button>
         </div>
         
         <div class="performance-mode" id="performanceMode" style="display: none;">
@@ -419,7 +422,7 @@
                 this.facingMode = 'user';
                 
                 // Exercise mode
-                this.exerciseMode = 'pushup'; // 'pushup', 'situp', 'squat'
+                this.exerciseMode = 'pushup'; // 'pushup', 'situp', 'squat', 'jumpingjack'
                 
                 // Performance optimization
                 this.frameSkip = 0;
@@ -459,6 +462,13 @@
                         angleUp: 160,   // Standing
                         minMovement: 30,
                         angleLabel: 'Knee Angle'
+                    },
+                    jumpingjack: {
+                        feetTogetherRatio: 0.8, // feet width / shoulder width
+                        feetApartRatio: 1.2,
+                        armsDownThreshold: 0, // wrist y > hip y
+                        armsUpThreshold: 1, // wrist y < shoulder y
+                        angleLabel: 'Stance Width'
                     }
                 };
                 
@@ -659,7 +669,8 @@
                 const typeText = {
                     'pushup': 'PUSHUPS',
                     'situp': 'SITUPS',
-                    'squat': 'SQUATS'
+                    'squat': 'SQUATS',
+                    'jumpingjack': 'JUMPING JACKS'
                 };
                 
                 document.getElementById('exerciseType').textContent = typeText[type];
@@ -833,6 +844,43 @@
                 
                 this.updateFormDisplay();
             }
+
+            analyzeFormJumpingJack(keypoints) {
+                const previousError = this.formErrors.length > 0 ? this.formErrors[0] : null;
+                this.formErrors = [];
+                let quality = 100;
+
+                const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
+                const LEFT_WRIST = 9, RIGHT_WRIST = 10;
+                const LEFT_ANKLE = 15, RIGHT_ANKLE = 16;
+
+                if (this.stage === 'up') {
+                    const avgWristY = (keypoints[LEFT_WRIST].y + keypoints[RIGHT_WRIST].y) / 2;
+                    const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
+                    if (avgWristY > avgShoulderY) {
+                        this.formErrors.push('Raise arms higher');
+                        quality -= 30;
+                    }
+
+                    const feetWidth = Math.abs(keypoints[LEFT_ANKLE].x - keypoints[RIGHT_ANKLE].x);
+                    const shoulderWidth = Math.abs(keypoints[LEFT_SHOULDER].x - keypoints[RIGHT_SHOULDER].x);
+                    if (feetWidth < shoulderWidth * this.thresholds.jumpingjack.feetApartRatio) {
+                        this.formErrors.push('Spread feet wider');
+                        quality -= 25;
+                    }
+                }
+
+                this.formQuality = Math.max(0, quality);
+                
+                if (this.formErrors.length > 0 && this.formErrors[0] !== this.previousFormError) {
+                    this.speak(this.formErrors[0], false);
+                    this.previousFormError = this.formErrors[0];
+                } else if (this.formErrors.length === 0 && this.previousFormError !== null) {
+                    this.previousFormError = null;
+                }
+                
+                this.updateFormDisplay();
+            }
             
             updateFormDisplay() {
                 const qualityEl = document.getElementById('formQuality');
@@ -870,17 +918,12 @@
                         ];
                         break;
                     case 'situp':
-                        connections = [
-                            [5, 6],             // Shoulders
-                            [11, 12],           // Hips
-                            [5, 11], [6, 12],   // Torso
-                            [11, 13], [12, 14], // Hip to knee
-                            [13, 15], [14, 16]  // Knee to ankle
-                        ];
-                        break;
                     case 'squat':
+                    case 'jumpingjack':
                         connections = [
                             [5, 6],             // Shoulders
+                            [5, 7], [7, 9],     // Left arm
+                            [6, 8], [8, 10],    // Right arm
                             [11, 12],           // Hips
                             [5, 11], [6, 12],   // Torso
                             [11, 13], [12, 14], // Hip to knee
@@ -907,7 +950,7 @@
                 
                 const essentialKeypoints = this.exerciseMode === 'pushup' ? 
                     [5, 6, 7, 8, 9, 10, 11, 12] : 
-                    [5, 6, 11, 12, 13, 14, 15, 16];
+                    [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
                     
                 essentialKeypoints.forEach(idx => {
                     const kp = keypoints[idx];
@@ -1098,8 +1141,6 @@
                 angleProgress = Math.max(0, Math.min(100, angleProgress)); // Clamp between 0 and 100
                 document.querySelector('.angle-fill').style.width = `${angleProgress}%`;
                 
-                // const threshold = this.thresholds.squat; // This line is now above the angleProgress calculation
-                
                 if (movementRange > threshold.minMovement) {
                     if (this.stage === 'up' && smoothedAngle < (threshold.angleDown + 5)) { // Note: logic uses angleDown + 5
                         this.stage = 'down';
@@ -1134,6 +1175,69 @@
                 
                 this.analyzeFormSquat(keypoints);
             }
+
+            detectJumpingJack(keypoints) {
+                const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
+                const LEFT_WRIST = 9, RIGHT_WRIST = 10;
+                const LEFT_HIP = 11, RIGHT_HIP = 12;
+                const LEFT_ANKLE = 15, RIGHT_ANKLE = 16;
+
+                const requiredKeypoints = [
+                    keypoints[LEFT_SHOULDER], keypoints[RIGHT_SHOULDER], keypoints[LEFT_WRIST], keypoints[RIGHT_WRIST],
+                    keypoints[LEFT_HIP], keypoints[RIGHT_HIP], keypoints[LEFT_ANKLE], keypoints[RIGHT_ANKLE]
+                ];
+
+                if (!requiredKeypoints.every(kp => kp && kp.score > this.CONFIDENCE_THRESHOLD)) {
+                    return;
+                }
+
+                const shoulderWidth = Math.abs(keypoints[LEFT_SHOULDER].x - keypoints[RIGHT_SHOULDER].x);
+                const feetWidth = Math.abs(keypoints[LEFT_ANKLE].x - keypoints[RIGHT_ANKLE].x);
+                const avgWristY = (keypoints[LEFT_WRIST].y + keypoints[RIGHT_WRIST].y) / 2;
+                const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
+                const avgHipY = (keypoints[LEFT_HIP].y + keypoints[RIGHT_HIP].y) / 2;
+
+                const threshold = this.thresholds.jumpingjack;
+
+                const armsAreUp = avgWristY < avgShoulderY;
+                const armsAreDown = avgWristY > avgHipY;
+                const feetAreApart = feetWidth > shoulderWidth * threshold.feetApartRatio;
+                const feetAreTogether = feetWidth < shoulderWidth * threshold.feetTogetherRatio;
+
+                // Update UI visualization
+                const stanceProgress = Math.min(100, (feetWidth / (shoulderWidth * 1.5)) * 100);
+                document.querySelector('.angle-fill').style.width = `${stanceProgress}%`;
+
+                if (this.stage === 'down' && feetAreApart && armsAreUp) {
+                    this.stage = 'up';
+                    this.repStartTime = Date.now();
+                    document.querySelector('.stage').textContent = 'Up!';
+                    document.querySelector('.stage').className = 'stage up';
+                    this.playSound(880, 0.1);
+                } else if (this.stage === 'up' && feetAreTogether && armsAreDown) {
+                    this.stage = 'down';
+                    this.exerciseCount++;
+                    this.lastRepTime = (Date.now() - this.repStartTime) / 1000;
+
+                    const countEl = document.querySelector('.count');
+                    countEl.textContent = this.exerciseCount;
+                    countEl.classList.add('pulse');
+                    setTimeout(() => countEl.classList.remove('pulse'), 300);
+
+                    document.querySelector('.stage').textContent = 'Great Rep!';
+                    document.querySelector('.stage').className = 'stage down';
+                    document.getElementById('repTime').textContent = `${this.lastRepTime.toFixed(1)}s`;
+
+                    this.playSound(440, 0.2);
+                    this.speak(this.exerciseCount.toString(), true);
+
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([50, 30, 50]);
+                    }
+                }
+                
+                this.analyzeFormJumpingJack(keypoints);
+            }
             
             detectExercise(keypoints) {
                 switch(this.exerciseMode) {
@@ -1145,6 +1249,9 @@
                         break;
                     case 'squat':
                         this.detectSquat(keypoints);
+                        break;
+                    case 'jumpingjack':
+                        this.detectJumpingJack(keypoints);
                         break;
                 }
             }
@@ -1199,7 +1306,7 @@
             
             reset() {
                 this.exerciseCount = 0;
-                this.stage = this.exerciseMode === 'situp' ? 'down' : 'up';
+                this.stage = (this.exerciseMode === 'situp' || this.exerciseMode === 'jumpingjack') ? 'down' : 'up';
                 this.angleBuffer = [];
                 this.movementBuffer = [];
                 this.formQuality = 100;
@@ -1215,8 +1322,7 @@
                 document.querySelector('.angle-fill').style.width = '0%';
                 
                 this.playSound(660, 0.3);
-                const exerciseName = this.exerciseMode === 'pushup' ? 'pushups' : 
-                                   this.exerciseMode === 'situp' ? 'situps' : 'squats';
+                const exerciseName = this.exerciseMode.replace(/([A-Z])/g, ' $1').toLowerCase() + 's';
                 this.speak(`Count reset. Ready for ${exerciseName}`, true);
             }
             
