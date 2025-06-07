@@ -12,11 +12,37 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
             color: #fff;
             overflow: hidden;
             position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated background particles */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(0, 255, 136, 0.3);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
         }
 
         #container {
@@ -26,6 +52,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 1;
         }
 
         #canvas {
@@ -34,98 +61,221 @@
             object-fit: contain;
             transform: scaleX(-1);
             image-rendering: optimizeSpeed;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
         }
 
         #video {
             display: none;
         }
 
+        /* Enhanced Stats Panel */
         #stats {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(10, 10, 10, 0.85);
-            padding: 25px;
-            border-radius: 20px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            min-width: 240px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(25px);
+            padding: 30px;
+            border-radius: 25px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            min-width: 280px;
+            box-shadow: 
+                0 15px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #stats:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .exercise-type {
             font-size: 14px;
             color: #00ff88;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-            font-weight: 600;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            text-align: center;
+            position: relative;
+        }
+
+        .exercise-type::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
         }
 
         .count {
-            font-size: 56px;
-            font-weight: 700;
-            color: #00ff88;
-            margin-bottom: 10px;
+            font-size: 64px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            text-align: center;
             text-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
             font-variant-numeric: tabular-nums;
+            position: relative;
+        }
+
+        .count::after {
+            content: attr(data-label);
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 400;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .stage {
-            font-size: 20px;
+            font-size: 18px;
             color: #888;
-            margin-bottom: 20px;
-            transition: color 0.3s ease;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            text-align: center;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .stage.down {
             color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.2);
         }
 
         .stage.up {
             color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .timer {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            position: relative;
+        }
+
+        .timer.warning {
+            background: linear-gradient(135deg, #ff6b6b, #ff1744);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse-timer 1s infinite;
+        }
+
+        @keyframes pulse-timer {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Voice Command Indicator */
+        .voice-indicator {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background: #ff4444;
+            border-radius: 50%;
+            display: none;
+            animation: pulse-record 1s infinite;
+        }
+
+        .voice-indicator.listening {
+            display: block;
+            background: #00ff88;
+        }
+
+        @keyframes pulse-record {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         .metrics {
             display: grid;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 20px;
+            margin-top: 25px;
         }
 
         .metric {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
         }
 
         .metric-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            font-weight: 600;
         }
 
         .metric-value {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             color: #fff;
         }
 
+        /* Enhanced Progress Bar */
         .angle-bar {
             width: 100%;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 8px;
             position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .angle-fill {
             height: 100%;
             background: linear-gradient(90deg, #ff6b6b 0%, #ffd93d 50%, #00ff88 100%);
             width: 0%;
-            transition: width 0.1s ease;
+            transition: width 0.2s ease;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .angle-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         .angle-markers {
@@ -142,71 +292,121 @@
             top: 0;
             width: 2px;
             height: 100%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
         }
 
+        /* Enhanced Form Indicator */
         .form-indicator {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 10px;
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: 12px;
             font-size: 14px;
             text-align: center;
             transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .form-indicator:hover::before {
+            left: 100%;
         }
 
         .form-indicator.good {
-            background: rgba(0, 255, 136, 0.1);
+            background: rgba(0, 255, 136, 0.15);
             color: #00ff88;
-            border: 1px solid rgba(0, 255, 136, 0.3);
+            border: 1px solid rgba(0, 255, 136, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
         }
 
         .form-indicator.warning {
-            background: rgba(255, 215, 0, 0.1);
+            background: rgba(255, 215, 0, 0.15);
             color: #ffd700;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
         }
 
         .form-indicator.error {
-            background: rgba(255, 107, 107, 0.1);
+            background: rgba(255, 107, 107, 0.15);
             color: #ff6b6b;
-            border: 1px solid rgba(255, 107, 107, 0.3);
+            border: 1px solid rgba(255, 107, 107, 0.4);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
         }
 
+        /* Enhanced Exercise Selector */
         .exercise-selector {
             position: absolute;
             top: 20px;
             right: 20px;
-            display: flex;
-            gap: 10px;
-            background: rgba(10, 10, 10, 0.85);
-            padding: 10px;
-            border-radius: 15px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            background: rgba(10, 10, 10, 0.7);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
         }
 
         .exercise-btn {
-            padding: 10px 20px;
+            padding: 14px 20px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .exercise-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 212, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .exercise-btn:hover {
             background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .exercise-btn:hover::before {
+            opacity: 1;
         }
 
         .exercise-btn.active {
-            background: rgba(0, 255, 136, 0.2);
-            border-color: rgba(0, 255, 136, 0.4);
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 212, 255, 0.2));
+            border-color: rgba(0, 255, 136, 0.6);
             color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
 
+        /* Enhanced Controls */
         .controls {
             position: absolute;
             bottom: 30px;
@@ -216,54 +416,137 @@
             gap: 15px;
             flex-wrap: wrap;
             justify-content: center;
+            align-items: center;
         }
 
         button {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
-            padding: 14px 28px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
         }
 
         button:hover {
             background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover::before {
+            left: 100%;
         }
 
         button:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
         }
 
         button.active {
-            background: rgba(0, 255, 136, 0.2);
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 212, 255, 0.2));
             border-color: rgba(0, 255, 136, 0.4);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
 
+        button.start-timer {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
+            border-color: rgba(255, 215, 0, 0.4);
+            color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        button.voice-btn {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.2));
+            border-color: rgba(138, 43, 226, 0.4);
+            color: #da70d6;
+            position: relative;
+        }
+
+        button.voice-btn.listening {
+            animation: pulse-voice 1s infinite;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+        }
+
+        @keyframes pulse-voice {
+            0%, 100% { transform: translateY(-3px) scale(1); }
+            50% { transform: translateY(-3px) scale(1.05); }
+        }
+
+        /* Voice Command Status */
+        .voice-status {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(138, 43, 226, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.6);
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        /* Loading Screen Enhancement */
         #loading {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            z-index: 10;
         }
 
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
             border-top-color: #00ff88;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 25px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .spinner::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-top-color: #00ff88;
+            border-radius: 50%;
+            animation: spin 0.5s linear infinite reverse;
         }
 
         @keyframes spin {
@@ -276,66 +559,327 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            padding: 30px;
+            padding: 40px;
             background: rgba(255, 0, 0, 0.1);
             border: 1px solid rgba(255, 0, 0, 0.3);
-            border-radius: 15px;
-            max-width: 400px;
+            border-radius: 20px;
+            max-width: 450px;
+            backdrop-filter: blur(10px);
         }
 
         .performance-mode {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            background: rgba(10, 10, 10, 0.85);
-            padding: 15px;
-            border-radius: 12px;
+            background: rgba(10, 10, 10, 0.7);
+            padding: 16px 20px;
+            border-radius: 15px;
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         .fps {
             color: #00ff88;
-            font-weight: 600;
+            font-weight: 700;
         }
 
-        @media (max-width: 600px) {
+        /* Enhanced Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(10, 10, 10, 0.95), rgba(26, 26, 46, 0.95));
+            margin: 5% auto;
+            padding: 40px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 25px;
+            width: 90%;
+            max-width: 550px;
+            text-align: center;
+            box-shadow: 
+                0 25px 60px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal h2 {
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 25px;
+            font-size: 36px;
+            font-weight: 900;
+        }
+
+        .modal p {
+            margin-bottom: 25px;
+            font-size: 18px;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 18px 24px;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: rgba(0, 255, 136, 0.6);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .modal input::placeholder {
+            color: #666;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .modal button {
+            min-width: 140px;
+            padding: 18px 32px;
+            font-size: 16px;
+            border-radius: 15px;
+        }
+
+        /* Enhanced Leaderboard */
+        .leaderboard {
+            max-height: 450px;
+            overflow-y: auto;
+            margin-top: 25px;
+            padding-right: 10px;
+        }
+
+        .leaderboard::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .leaderboard::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .leaderboard::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.3);
+            border-radius: 3px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border-left: 4px solid #00ff88;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .leaderboard-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .leaderboard-item:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .leaderboard-item:hover::before {
+            transform: translateX(100%);
+        }
+
+        .leaderboard-item.current-user {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 212, 255, 0.15));
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            transform: scale(1.02);
+        }
+
+        .leaderboard-item.current-user .player-name {
+            color: #00ff88;
+            font-weight: 700;
+        }
+
+        .leaderboard-item.rank-1 {
+            border-left-color: #ffd700;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .leaderboard-item.rank-2 {
+            border-left-color: #c0c0c0;
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), rgba(192, 192, 192, 0.05));
+        }
+
+        .leaderboard-item.rank-3 {
+            border-left-color: #cd7f32;
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), rgba(205, 127, 50, 0.05));
+        }
+
+        .rank {
+            font-weight: 900;
+            font-size: 20px;
+            color: #00ff88;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .rank.gold { 
+            color: #ffd700; 
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        .rank.silver { 
+            color: #c0c0c0; 
+            text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+        }
+        .rank.bronze { 
+            color: #cd7f32; 
+            text-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+        }
+
+        .player-name {
+            flex: 1;
+            text-align: left;
+            margin-left: 20px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .score {
+            font-weight: 900;
+            color: #00ff88;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .date {
+            font-size: 11px;
+            color: #666;
+            margin-left: 12px;
+            font-weight: 400;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
             #stats {
                 top: 10px;
                 left: 10px;
-                padding: 20px;
-                min-width: 180px;
+                padding: 25px;
+                min-width: 200px;
             }
             
             .count {
-                font-size: 42px;
+                font-size: 48px;
+            }
+
+            .timer {
+                font-size: 28px;
             }
             
             .exercise-selector {
                 top: auto;
-                bottom: 100px;
+                bottom: 140px;
                 right: 50%;
                 transform: translateX(50%);
-                flex-wrap: wrap;
-                justify-content: center;
+                grid-template-columns: 1fr 1fr;
+                max-width: 300px;
             }
             
             .controls {
-                bottom: 15px;
-                gap: 10px;
+                bottom: 20px;
+                gap: 12px;
             }
             
             button {
-                padding: 12px 20px;
-                font-size: 14px;
+                padding: 14px 24px;
+                font-size: 12px;
             }
             
             .performance-mode {
                 display: none;
             }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+                padding: 30px;
+            }
+
+            .modal h2 {
+                font-size: 28px;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .modal button {
+                width: 100%;
+            }
         }
 
+        /* Animations */
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -343,24 +887,45 @@
         }
 
         .count.pulse {
-            animation: pulse 0.3s ease;
+            animation: pulse 0.4s ease;
+        }
+
+        /* Accessibility */
+        button:focus,
+        .exercise-btn:focus,
+        input:focus {
+            outline: 2px solid #00ff88;
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Animated Background -->
+    <div class="bg-particles" id="particles"></div>
+
     <div id="container">
         <video id="video" playsinline></video>
         <canvas id="canvas"></canvas>
         
         <div id="loading">
             <div class="spinner"></div>
-            <p>Loading MoveNet Lightning Model...</p>
-            <p style="margin-top: 10px; color: #666; font-size: 14px;">Optimizing for performance...</p>
+            <h2 style="margin-bottom: 15px; background: linear-gradient(135deg, #00ff88, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Loading AI Model</h2>
+            <p style="color: #666; font-size: 16px;">Optimizing for peak performance...</p>
         </div>
         
         <div id="stats" style="display: none;">
+            <div class="voice-indicator" id="voiceIndicator"></div>
             <div class="exercise-type" id="exerciseType">PUSH-UPS</div>
-            <div class="count">0</div>
+            <div class="timer" id="timer">60s</div>
+            <div class="count" data-label="reps">0</div>
             <div class="stage">Ready to Start</div>
             
             <div class="metrics">
@@ -390,27 +955,87 @@
         </div>
         
         <div class="exercise-selector" style="display: none;">
-            <button class="exercise-btn active" onclick="exerciseCounter.setExercise('pushup')">Push-ups</button>
-            <button class="exercise-btn" onclick="exerciseCounter.setExercise('situp')">Sit-ups</button>
-            <button class="exercise-btn" onclick="exerciseCounter.setExercise('squat')">Squats</button>
-            <button class="exercise-btn" onclick="exerciseCounter.setExercise('jumpingjack')">Jumping Jacks</button>
+            <button class="exercise-btn active" onclick="exerciseCounter.setExercise('pushup')">💪 Push-ups</button>
+            <button class="exercise-btn" onclick="exerciseCounter.setExercise('situp')">🔥 Sit-ups</button>
+            <button class="exercise-btn" onclick="exerciseCounter.setExercise('squat')">🏋️ Squats</button>
+            <button class="exercise-btn" onclick="exerciseCounter.setExercise('jumpingjack')">⚡ Jumping Jacks</button>
         </div>
         
         <div class="performance-mode" id="performanceMode" style="display: none;">
             <span class="fps">30 FPS</span> | <span id="latency">0ms</span>
         </div>
         
+        <!-- Voice Command Status -->
+        <div class="voice-status" id="voiceStatus">
+            🎤 Listening for commands...
+        </div>
+        
         <div class="controls" style="display: none;">
-            <button onclick="exerciseCounter.reset()">Reset Count</button>
-            <button onclick="exerciseCounter.toggleCamera()">Switch Camera</button>
-            <button onclick="exerciseCounter.toggleSound()" id="soundBtn">Sound: ON</button>
-            <button onclick="exerciseCounter.togglePerformanceMode()">Performance</button>
+            <button onclick="exerciseCounter.startTimer()" class="start-timer" id="timerBtn">🚀 Start Timer</button>
+            <button onclick="exerciseCounter.toggleVoiceCommands()" class="voice-btn" id="voiceBtn">🎤 Voice Control</button>
+            <button onclick="exerciseCounter.reset()">🔄 Reset</button>
+            <button onclick="exerciseCounter.showLeaderboard()">🏆 High Scores</button>
+            <button onclick="exerciseCounter.toggleCamera()">📷 Switch Camera</button>
+            <button onclick="exerciseCounter.toggleSound()" id="soundBtn">🔊 Sound: ON</button>
         </div>
     </div>
 
+    <!-- Score Input Modal -->
+    <div id="scoreModal" class="modal">
+        <div class="modal-content">
+            <button onclick="exerciseCounter.skipScore()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; padding: 5px; line-height: 1; transition: color 0.3s ease;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">×</button>
+            <h2>🏆 Amazing Workout!</h2>
+            <p id="finalScore">You completed 0 reps!</p>
+            <input type="text" id="playerName" placeholder="Enter your name (or press Enter)" maxlength="20">
+            <div class="modal-buttons">
+                <button onclick="exerciseCounter.saveScore()">💾 Save Score</button>
+                <button onclick="exerciseCounter.skipScore()">⏭️ Skip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content">
+            <button onclick="exerciseCounter.closeLeaderboard()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; padding: 5px; line-height: 1; transition: color 0.3s ease;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">×</button>
+            <h2>🏆 Hall of Fame</h2>
+            <div class="exercise-selector" style="position: relative; background: none; padding: 0; margin-bottom: 25px;">
+                <button class="exercise-btn active" onclick="exerciseCounter.showExerciseLeaderboard('pushup')">💪 Push-ups</button>
+                <button class="exercise-btn" onclick="exerciseCounter.showExerciseLeaderboard('situp')">🔥 Sit-ups</button>
+                <button class="exercise-btn" onclick="exerciseCounter.showExerciseLeaderboard('squat')">🏋️ Squats</button>
+                <button class="exercise-btn" onclick="exerciseCounter.showExerciseLeaderboard('jumpingjack')">⚡ Jumping Jacks</button>
+            </div>
+            <div id="leaderboardContent" class="leaderboard">
+                <p>Loading champions...</p>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="exerciseCounter.closeLeaderboard()">✨ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.0/dist/pose-detection.min.js"></script>
+    
+    <!-- Firebase Configuration (will be generated by GitHub Actions) -->
+    <script src="./firebase-config.js"></script>
+    
     <script>
+        // Initialize Firebase
+        let db = null;
+        try {
+            firebase.initializeApp(window.firebaseConfig);
+            db = firebase.firestore();
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.warn('Firebase initialization failed:', error);
+        }
+
         class ExerciseCounter {
             constructor() {
                 // Core components
@@ -422,7 +1047,18 @@
                 this.facingMode = 'user';
                 
                 // Exercise mode
-                this.exerciseMode = 'pushup'; // 'pushup', 'situp', 'squat', 'jumpingjack'
+                this.exerciseMode = 'pushup';
+                
+                // Timer functionality
+                this.timeLeft = 60;
+                this.timerInterval = null;
+                this.timerRunning = false;
+                this.sessionStarted = false;
+                
+                // Voice recognition
+                this.recognition = null;
+                this.voiceEnabled = false;
+                this.voiceListening = false;
                 
                 // Performance optimization
                 this.frameSkip = 0;
@@ -452,22 +1088,22 @@
                         angleLabel: 'Elbow Angle'
                     },
                     situp: {
-                        angleDown: 30,  // Torso close to ground
-                        angleUp: 80,    // Torso raised
+                        angleDown: 30,
+                        angleUp: 80,
                         minMovement: 30,
                         angleLabel: 'Torso Angle'
                     },
                     squat: {
-                        angleDown: 130,  // not so deep squat
-                        angleUp: 160,   // Standing
+                        angleDown: 130,
+                        angleUp: 160,
                         minMovement: 30,
                         angleLabel: 'Knee Angle'
                     },
                     jumpingjack: {
-                        feetTogetherRatio: 0.8, // feet width / shoulder width
+                        feetTogetherRatio: 0.8,
                         feetApartRatio: 1.2,
-                        armsDownThreshold: 0, // wrist y > hip y
-                        armsUpThreshold: 1, // wrist y < shoulder y
+                        armsDownThreshold: 0,
+                        armsUpThreshold: 1,
                         angleLabel: 'Stance Width'
                     }
                 };
@@ -494,6 +1130,8 @@
                     });
                     
                     this.initAudio();
+                    this.initVoiceRecognition();
+                    this.createParticles();
                     
                     await tf.setBackend('webgl');
                     await tf.ready();
@@ -516,10 +1154,10 @@
                     
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('stats').style.display = 'block';
-                    document.querySelector('.exercise-selector').style.display = 'flex';
+                    document.querySelector('.exercise-selector').style.display = 'grid';
                     document.querySelector('.controls').style.display = 'flex';
                     
-                    this.speak("Ready to start pushups", true);
+                    this.speak("Welcome to STF AI Exercise Counter! Voice commands are available. Say 'start timer' to begin a workout challenge!", true);
                     
                     this.checkPerformance();
                     this.detectPose();
@@ -529,6 +1167,520 @@
                     this.speak("Error initializing. Please check permissions and refresh.", true);
                 }
             }
+
+            // Create animated background particles
+            createParticles() {
+                const particlesContainer = document.getElementById('particles');
+                const particleCount = 50;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 6 + 's';
+                    particle.style.animationDuration = (4 + Math.random() * 4) + 's';
+                    particlesContainer.appendChild(particle);
+                }
+            }
+
+            // Voice Recognition Setup
+            initVoiceRecognition() {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.recognition = new SpeechRecognition();
+                    
+                    this.recognition.continuous = true;
+                    this.recognition.interimResults = false;
+                    this.recognition.lang = 'en-US';
+                    
+                    this.recognition.onstart = () => {
+                        console.log('Voice recognition started');
+                        this.voiceListening = true;
+                        this.updateVoiceUI();
+                    };
+                    
+                    this.recognition.onend = () => {
+                        console.log('Voice recognition ended');
+                        this.voiceListening = false;
+                        this.updateVoiceUI();
+                        
+                        // Restart if voice is still enabled
+                        if (this.voiceEnabled) {
+                            setTimeout(() => {
+                                if (this.voiceEnabled) {
+                                    this.recognition.start();
+                                }
+                            }, 1000);
+                        }
+                    };
+                    
+                    this.recognition.onerror = (event) => {
+                        console.error('Voice recognition error:', event.error);
+                        this.voiceListening = false;
+                        this.updateVoiceUI();
+                    };
+                    
+                    this.recognition.onresult = (event) => {
+                        const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                        console.log('Voice command:', transcript);
+                        this.processVoiceCommand(transcript);
+                    };
+                } else {
+                    console.warn('Speech recognition not supported');
+                    document.getElementById('voiceBtn').style.display = 'none';
+                }
+            }
+
+            processVoiceCommand(command) {
+                this.showVoiceStatus(`🎤 "${command}"`);
+                
+                // Timer commands
+                if (command.includes('start timer') || command.includes('begin workout') || command.includes('start challenge')) {
+                    if (!this.timerRunning) {
+                        this.startTimer();
+                        this.speak("Timer started! Let's go!", true);
+                    }
+                }
+                
+                // Reset commands
+                else if (command.includes('reset') || command.includes('restart')) {
+                    this.reset();
+                    this.speak("Count reset!", true);
+                }
+                
+                // Exercise selection commands
+                else if (command.includes('push up') || command.includes('pushup')) {
+                    this.setExerciseByVoice('pushup');
+                }
+                else if (command.includes('sit up') || command.includes('situp')) {
+                    this.setExerciseByVoice('situp');
+                }
+                else if (command.includes('squat')) {
+                    this.setExerciseByVoice('squat');
+                }
+                else if (command.includes('jumping jack')) {
+                    this.setExerciseByVoice('jumpingjack');
+                }
+                
+                // Leaderboard commands
+                else if (command.includes('high score') || command.includes('leaderboard') || command.includes('hall of fame')) {
+                    this.showLeaderboard();
+                    this.speak("Showing high scores!", true);
+                }
+                
+                // Sound control commands
+                else if (command.includes('mute') || command.includes('sound off')) {
+                    if (this.soundEnabled) {
+                        this.toggleSound();
+                    }
+                }
+                else if (command.includes('unmute') || command.includes('sound on')) {
+                    if (!this.soundEnabled) {
+                        this.toggleSound();
+                    }
+                }
+                
+                // Help commands
+                else if (command.includes('help') || command.includes('commands')) {
+                    this.speak("Voice commands: start timer, reset, push ups, sit ups, squats, jumping jacks, high scores, sound on, sound off", true);
+                }
+                
+                else {
+                    this.showVoiceStatus("❓ Command not recognized");
+                }
+            }
+
+            setExerciseByVoice(exercise) {
+                this.exerciseMode = exercise;
+                this.reset();
+                
+                // Update UI
+                document.querySelectorAll('.exercise-selector .exercise-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.onclick.toString().includes(exercise)) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                const typeText = {
+                    'pushup': 'PUSH-UPS',
+                    'situp': 'SIT-UPS',
+                    'squat': 'SQUATS',
+                    'jumpingjack': 'JUMPING JACKS'
+                };
+                
+                document.getElementById('exerciseType').textContent = typeText[exercise];
+                document.getElementById('angleLabel').textContent = this.thresholds[exercise].angleLabel;
+                
+                this.speak(`Switched to ${typeText[exercise].toLowerCase().replace('-', ' ')}`, true);
+            }
+
+            showVoiceStatus(message) {
+                const statusEl = document.getElementById('voiceStatus');
+                statusEl.textContent = message;
+                statusEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+
+            updateVoiceUI() {
+                const voiceBtn = document.getElementById('voiceBtn');
+                const voiceIndicator = document.getElementById('voiceIndicator');
+                
+                if (this.voiceListening) {
+                    voiceBtn.classList.add('listening');
+                    voiceIndicator.classList.add('listening');
+                    voiceBtn.textContent = '🎤 Listening...';
+                } else if (this.voiceEnabled) {
+                    voiceBtn.classList.remove('listening');
+                    voiceIndicator.classList.remove('listening');
+                    voiceBtn.textContent = '🎤 Voice: ON';
+                } else {
+                    voiceBtn.classList.remove('listening');
+                    voiceIndicator.classList.remove('listening');
+                    voiceBtn.textContent = '🎤 Voice Control';
+                }
+            }
+
+            toggleVoiceCommands() {
+                if (!this.recognition) {
+                    alert('Voice recognition not supported in this browser');
+                    return;
+                }
+                
+                this.voiceEnabled = !this.voiceEnabled;
+                
+                if (this.voiceEnabled) {
+                    this.recognition.start();
+                    this.speak("Voice commands activated. Say 'help' for available commands.", true);
+                    this.showVoiceStatus("🎤 Voice commands activated!");
+                } else {
+                    this.recognition.stop();
+                    this.speak("Voice commands deactivated.", true);
+                }
+                
+                this.updateVoiceUI();
+            }
+
+            // Timer functions
+            startTimer() {
+                if (this.timerRunning) return;
+                
+                this.timerRunning = true;
+                this.sessionStarted = true;
+                this.timeLeft = 60;
+                this.exerciseCount = 0;
+                
+                document.getElementById('timerBtn').textContent = '⏱️ Timer Running';
+                document.getElementById('timerBtn').style.pointerEvents = 'none';
+                document.querySelector('.count').textContent = '0';
+                
+                this.speak("Timer started! Give it your all!", true);
+                this.playSound(880, 0.3);
+                
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateTimerDisplay();
+                    
+                    if (this.timeLeft <= 10 && this.timeLeft > 0) {
+                        this.speak(this.timeLeft.toString(), true);
+                        this.playSound(660, 0.2);
+                    }
+                    
+                    if (this.timeLeft <= 0) {
+                        this.endTimer();
+                    }
+                }, 1000);
+            }
+
+            updateTimerDisplay() {
+                const timerEl = document.getElementById('timer');
+                timerEl.textContent = `${this.timeLeft}s`;
+                
+                if (this.timeLeft <= 10) {
+                    timerEl.classList.add('warning');
+                } else {
+                    timerEl.classList.remove('warning');
+                }
+            }
+
+            endTimer() {
+                clearInterval(this.timerInterval);
+                this.timerRunning = false;
+                this.sessionStarted = false;
+                
+                document.getElementById('timerBtn').textContent = '🚀 Start Timer';
+                document.getElementById('timerBtn').style.pointerEvents = 'auto';
+                document.getElementById('timer').classList.remove('warning');
+                
+                this.speak(`Outstanding! You completed ${this.exerciseCount} reps in 60 seconds!`, true);
+                this.playSound(440, 1);
+                
+                // Show score modal
+                this.showScoreModal();
+            }
+
+            showScoreModal() {
+                const finalScoreText = this.exerciseCount === 0 ? 
+                    "Great effort! Every workout counts! 💪" :
+                    this.exerciseCount === 1 ?
+                    `You completed 1 ${this.exerciseMode}! 🎯` :
+                    `Incredible! You crushed ${this.exerciseCount} ${this.exerciseMode}s! 🔥`;
+                    
+                document.getElementById('finalScore').textContent = finalScoreText;
+                
+                const modal = document.getElementById('scoreModal');
+                modal.style.display = 'block';
+                modal.style.animation = 'slideIn 0.3s ease';
+                
+                // Focus input after animation
+                setTimeout(() => {
+                    document.getElementById('playerName').focus();
+                }, 300);
+            }
+
+            async saveScore() {
+                const playerName = document.getElementById('playerName').value.trim();
+                if (!playerName) {
+                    // Shake the input field for better UX
+                    const input = document.getElementById('playerName');
+                    input.style.animation = 'shake 0.5s ease-in-out';
+                    input.focus();
+                    setTimeout(() => input.style.animation = '', 500);
+                    this.speak("Please enter your name first!", true);
+                    return;
+                }
+
+                if (!db) {
+                    this.speak("Unable to save score. Firebase not configured.", true);
+                    this.closeModal();
+                    return;
+                }
+
+                // Show loading state
+                const saveBtn = document.querySelector('#scoreModal button[onclick="exerciseCounter.saveScore()"]');
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = '💾 Saving...';
+                saveBtn.disabled = true;
+                saveBtn.style.opacity = '0.6';
+
+                try {
+                    await db.collection('highscores').add({
+                        exercise: this.exerciseMode,
+                        score: this.exerciseCount,
+                        playerName: playerName,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        date: new Date().toISOString()
+                    });
+                    
+                    // Success feedback
+                    saveBtn.textContent = '✅ Saved!';
+                    saveBtn.style.background = 'linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 212, 255, 0.3))';
+                    
+                    this.speak("Amazing! Your score is now on the leaderboard!", true);
+                    this.playSound(880, 0.5);
+                    
+                    // Close modal immediately after success
+                    setTimeout(() => {
+                        this.closeModal();
+                        
+                        // Show leaderboard with user's new score after a brief delay
+                        setTimeout(() => {
+                            this.showLeaderboardWithHighlight(this.exerciseMode, playerName);
+                        }, 300);
+                    }, 800);
+                    
+                } catch (error) {
+                    console.error('Error saving score:', error);
+                    
+                    // Reset button state on error
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    saveBtn.style.opacity = '1';
+                    saveBtn.style.background = '';
+                    
+                    this.speak("Error saving score. Please try again.", true);
+                    this.playSound(440, 0.5);
+                }
+            }
+
+            skipScore() {
+                this.speak("No worries! Your amazing workout still counts!", true);
+                this.closeModal();
+            }
+
+            closeModal() {
+                const modal = document.getElementById('scoreModal');
+                modal.style.animation = 'fadeOut 0.3s ease';
+                
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    modal.style.animation = '';
+                    document.getElementById('playerName').value = '';
+                    
+                    // Reset save button state
+                    const saveBtn = document.querySelector('#scoreModal button[onclick="exerciseCounter.saveScore()"]');
+                    saveBtn.textContent = '💾 Save Score';
+                    saveBtn.disabled = false;
+                    saveBtn.style.opacity = '1';
+                    saveBtn.style.background = '';
+                }, 300);
+            }
+
+            async showLeaderboardWithHighlight(exercise, playerName = null) {
+                document.getElementById('leaderboardModal').style.display = 'block';
+                
+                // Set active exercise tab
+                const leaderboardBtns = document.querySelectorAll('#leaderboardModal .exercise-btn');
+                leaderboardBtns.forEach(btn => btn.classList.remove('active'));
+                
+                // Find and activate current exercise button
+                const currentBtn = Array.from(leaderboardBtns).find(btn => 
+                    btn.onclick.toString().includes(exercise)
+                );
+                if (currentBtn) currentBtn.classList.add('active');
+                
+                await this.showExerciseLeaderboard(exercise, playerName);
+            }
+
+            async showLeaderboard() {
+                await this.showLeaderboardWithHighlight(this.exerciseMode);
+            }
+
+            async showExerciseLeaderboard(exercise, highlightPlayer = null) {
+                // Update active button if called from button click
+                if (event && event.target) {
+                    const leaderboardBtns = document.querySelectorAll('#leaderboardModal .exercise-btn');
+                    leaderboardBtns.forEach(btn => btn.classList.remove('active'));
+                    event.target.classList.add('active');
+                }
+
+                const contentEl = document.getElementById('leaderboardContent');
+                contentEl.innerHTML = '<div style="text-align: center; color: #666; padding: 30px;"><div class="spinner" style="width: 40px; height: 40px; margin: 0 auto 15px;"></div><p>Loading champions...</p></div>';
+
+                if (!db) {
+                    contentEl.innerHTML = '<p style="text-align: center; color: #ff6b6b; padding: 30px;">⚠️ Firebase not configured. Cannot load scores.</p>';
+                    return;
+                }
+
+                try {
+                    const snapshot = await db.collection('highscores')
+                        .where('exercise', '==', exercise)
+                        .orderBy('score', 'desc')
+                        .limit(10)
+                        .get();
+
+                    if (snapshot.empty) {
+                        contentEl.innerHTML = `
+                            <div style="text-align: center; color: #666; padding: 40px;">
+                                <div style="font-size: 48px; margin-bottom: 20px;">🏆</div>
+                                <h3 style="color: #00ff88; margin-bottom: 10px;">No champions yet!</h3>
+                                <p>Be the first to claim the throne! 👑</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = '';
+                    let userRank = null;
+                    
+                    snapshot.docs.forEach((doc, index) => {
+                        const data = doc.data();
+                        const rank = index + 1;
+                        const date = data.timestamp ? 
+                            data.timestamp.toDate().toLocaleDateString() : 
+                            new Date(data.date).toLocaleDateString();
+                        
+                        let rankClass = '';
+                        let rankColor = '';
+                        let trophy = '';
+                        let isCurrentUser = highlightPlayer && data.playerName === highlightPlayer;
+                        
+                        if (isCurrentUser) userRank = rank;
+                        
+                        if (rank === 1) { 
+                            rankClass = 'rank-1'; 
+                            rankColor = 'gold'; 
+                            trophy = '🥇';
+                        }
+                        else if (rank === 2) { 
+                            rankClass = 'rank-2'; 
+                            rankColor = 'silver'; 
+                            trophy = '🥈';
+                        }
+                        else if (rank === 3) { 
+                            rankClass = 'rank-3'; 
+                            rankColor = 'bronze'; 
+                            trophy = '🥉';
+                        }
+
+                        html += `
+                            <div class="leaderboard-item ${rankClass} ${isCurrentUser ? 'current-user' : ''}" ${isCurrentUser ? 'id="currentUserScore"' : ''}>
+                                <div class="rank ${rankColor}">${trophy || '#' + rank}</div>
+                                <div class="player-name">${data.playerName} ${isCurrentUser ? '✨' : ''}</div>
+                                <div>
+                                    <div class="score">${data.score}</div>
+                                    <div class="date">${date}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    contentEl.innerHTML = html;
+                    
+                    // Highlight and scroll to user's score if just added
+                    if (highlightPlayer && userRank) {
+                        setTimeout(() => {
+                            const userScoreEl = document.getElementById('currentUserScore');
+                            if (userScoreEl) {
+                                userScoreEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                userScoreEl.style.animation = 'pulse 1s ease-in-out 3';
+                            }
+                        }, 100);
+                        
+                        // Celebrate based on rank
+                        if (userRank === 1) {
+                            this.speak("Incredible! You're the new champion!", true);
+                            this.playSound(880, 0.3);
+                            setTimeout(() => this.playSound(1100, 0.3), 200);
+                            setTimeout(() => this.playSound(1320, 0.5), 400);
+                        } else if (userRank <= 3) {
+                            this.speak(`Outstanding! You made it to ${userRank === 2 ? '2nd' : '3rd'} place!`, true);
+                            this.playSound(880, 0.3);
+                            setTimeout(() => this.playSound(1100, 0.4), 200);
+                        } else {
+                            this.speak(`Great job! You're ranked ${userRank} on the leaderboard!`, true);
+                            this.playSound(660, 0.3);
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading leaderboard:', error);
+                    contentEl.innerHTML = `
+                        <div style="text-align: center; color: #ff6b6b; padding: 30px;">
+                            <div style="font-size: 32px; margin-bottom: 15px;">⚠️</div>
+                            <p>Error loading scores.</p>
+                            <button onclick="exerciseCounter.showExerciseLeaderboard('${exercise}')" 
+                                    style="margin-top: 15px; padding: 10px 20px; background: #ff6b6b; border: none; border-radius: 8px; color: white; cursor: pointer;">
+                                🔄 Try Again
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+
+            closeLeaderboard() {
+                const modal = document.getElementById('leaderboardModal');
+                modal.style.animation = 'fadeOut 0.3s ease';
+                
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    modal.style.animation = '';
+                }, 300);
+            }
             
             initAudio() {
                 try {
@@ -536,7 +1688,7 @@
                 } catch (e) {
                     console.warn("Web Audio API not supported.", e);
                     this.soundEnabled = false;
-                    document.getElementById('soundBtn').textContent = 'Sound: OFF';
+                    document.getElementById('soundBtn').textContent = '🔇 Sound: OFF';
                     document.getElementById('soundBtn').classList.remove('active');
                 }
             }
@@ -661,14 +1813,14 @@
                 this.reset();
                 
                 // Update UI
-                document.querySelectorAll('.exercise-btn').forEach(btn => {
+                document.querySelectorAll('.exercise-selector .exercise-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 event.target.classList.add('active');
                 
                 const typeText = {
-                    'pushup': 'PUSHUPS',
-                    'situp': 'SITUPS',
+                    'pushup': 'PUSH-UPS',
+                    'situp': 'SIT-UPS',
                     'squat': 'SQUATS',
                     'jumpingjack': 'JUMPING JACKS'
                 };
@@ -676,9 +1828,10 @@
                 document.getElementById('exerciseType').textContent = typeText[type];
                 document.getElementById('angleLabel').textContent = this.thresholds[type].angleLabel;
                 
-                this.speak(`Switched to ${typeText[type].toLowerCase()}`, true);
+                this.speak(`Switched to ${typeText[type].toLowerCase().replace('-', ' ')}`, true);
             }
             
+            // Form analysis methods (keeping original implementations)
             analyzeFormPushUp(keypoints) {
                 const previousError = this.formErrors.length > 0 ? this.formErrors[0] : null;
                 this.formErrors = [];
@@ -737,7 +1890,6 @@
                 const LEFT_HIP = 11, RIGHT_HIP = 12;
                 const LEFT_KNEE = 13, RIGHT_KNEE = 14;
                 
-                // Check if knees are bent (important for proper sit-up form)
                 if (keypoints[LEFT_HIP].score > this.CONFIDENCE_THRESHOLD && 
                     keypoints[LEFT_KNEE].score > this.CONFIDENCE_THRESHOLD && 
                     keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD) {
@@ -745,7 +1897,7 @@
                     const kneeAngle = this.calculateAngle(
                         keypoints[LEFT_HIP], 
                         keypoints[LEFT_KNEE], 
-                        {x: keypoints[LEFT_KNEE].x + 50, y: keypoints[LEFT_KNEE].y} // Approximate ankle position
+                        {x: keypoints[LEFT_KNEE].x + 50, y: keypoints[LEFT_KNEE].y}
                     );
                     
                     if (kneeAngle > 120) {
@@ -754,7 +1906,6 @@
                     }
                 }
                 
-                // Check if hands are behind head or across chest
                 const LEFT_ELBOW = 7, RIGHT_ELBOW = 8;
                 const LEFT_WRIST = 9, RIGHT_WRIST = 10;
                 
@@ -792,7 +1943,6 @@
                 const LEFT_ANKLE = 15, RIGHT_ANKLE = 16;
                 const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
                 
-                // Check knee alignment (knees shouldn't go too far past toes)
                 if (keypoints[LEFT_KNEE].score > this.CONFIDENCE_THRESHOLD && 
                     keypoints[LEFT_ANKLE].score > this.CONFIDENCE_THRESHOLD) {
                     
@@ -805,7 +1955,6 @@
                     }
                 }
                 
-                // Check if back is straight (shoulders should be above hips)
                 if (keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD && 
                     keypoints[LEFT_HIP].score > this.CONFIDENCE_THRESHOLD) {
                     
@@ -818,7 +1967,6 @@
                     }
                 }
                 
-                // Check feet width (should be shoulder-width apart)
                 if (keypoints[LEFT_ANKLE].score > this.CONFIDENCE_THRESHOLD && 
                     keypoints[RIGHT_ANKLE].score > this.CONFIDENCE_THRESHOLD &&
                     keypoints[LEFT_SHOULDER].score > this.CONFIDENCE_THRESHOLD && 
@@ -910,24 +2058,24 @@
                 switch(this.exerciseMode) {
                     case 'pushup':
                         connections = [
-                            [5, 7], [7, 9],     // Left arm
-                            [6, 8], [8, 10],    // Right arm
-                            [5, 6],             // Shoulders
-                            [11, 12],           // Hips
-                            [5, 11], [6, 12]    // Torso
+                            [5, 7], [7, 9],
+                            [6, 8], [8, 10],
+                            [5, 6],
+                            [11, 12],
+                            [5, 11], [6, 12]
                         ];
                         break;
                     case 'situp':
                     case 'squat':
                     case 'jumpingjack':
                         connections = [
-                            [5, 6],             // Shoulders
-                            [5, 7], [7, 9],     // Left arm
-                            [6, 8], [8, 10],    // Right arm
-                            [11, 12],           // Hips
-                            [5, 11], [6, 12],   // Torso
-                            [11, 13], [12, 14], // Hip to knee
-                            [13, 15], [14, 16]  // Knee to ankle
+                            [5, 6],
+                            [5, 7], [7, 9],
+                            [6, 8], [8, 10],
+                            [11, 12],
+                            [5, 11], [6, 12],
+                            [11, 13], [12, 14],
+                            [13, 15], [14, 16]
                         ];
                         break;
                 }
@@ -962,6 +2110,7 @@
                 });
             }
             
+            // Exercise detection methods (keeping original implementations)
             detectPushUp(keypoints) {
                 const LEFT_SHOULDER = 5, RIGHT_SHOULDER = 6;
                 const LEFT_ELBOW = 7, RIGHT_ELBOW = 8;
@@ -1046,23 +2195,19 @@
                     return;
                 }
                 
-                // Calculate torso angle relative to ground
                 const avgShoulderX = (keypoints[LEFT_SHOULDER].x + keypoints[RIGHT_SHOULDER].x) / 2;
                 const avgShoulderY = (keypoints[LEFT_SHOULDER].y + keypoints[RIGHT_SHOULDER].y) / 2;
                 const avgHipX = (keypoints[LEFT_HIP].x + keypoints[RIGHT_HIP].x) / 2;
                 const avgHipY = (keypoints[LEFT_HIP].y + keypoints[RIGHT_HIP].y) / 2;
                 
-                // Calculate angle of torso relative to horizontal
                 const torsoAngle = Math.abs(Math.atan2(avgShoulderY - avgHipY, avgShoulderX - avgHipX) * 180 / Math.PI);
                 const smoothedAngle = this.smoothValue(this.angleBuffer, torsoAngle, this.bufferSize);
                 
-                // Track shoulder vertical movement
                 this.smoothValue(this.movementBuffer, avgShoulderY, 10);
                 
                 const movementRange = this.movementBuffer.length >= 5 ? 
                     Math.max(...this.movementBuffer) - Math.min(...this.movementBuffer) : 0;
                 
-                // Update angle visualization (0-90 degrees for sit-ups)
                 const angleProgress = Math.max(0, Math.min(100, (smoothedAngle / 90) * 100));
                 document.querySelector('.angle-fill').style.width = `${angleProgress}%`;
                 
@@ -1117,7 +2262,6 @@
                     return;
                 }
                 
-                // Calculate knee angles
                 const leftKneeAngle = this.calculateAngle(
                     keypoints[LEFT_HIP], keypoints[LEFT_KNEE], keypoints[LEFT_ANKLE]
                 );
@@ -1128,27 +2272,25 @@
                 const kneeAngle = (leftKneeAngle + rightKneeAngle) / 2;
                 const smoothedAngle = this.smoothValue(this.angleBuffer, kneeAngle, this.bufferSize);
                 
-                // Track hip vertical movement
                 const avgHipY = (keypoints[LEFT_HIP].y + keypoints[RIGHT_HIP].y) / 2;
                 this.smoothValue(this.movementBuffer, avgHipY, 10);
                 
                 const movementRange = this.movementBuffer.length >= 5 ? 
                     Math.max(...this.movementBuffer) - Math.min(...this.movementBuffer) : 0;
                 
-                // Update angle visualization
-                const threshold = this.thresholds.squat; // Get squat specific thresholds
+                const threshold = this.thresholds.squat;
                 let angleProgress = ((smoothedAngle - threshold.angleDown) / (threshold.angleUp - threshold.angleDown)) * 100;
-                angleProgress = Math.max(0, Math.min(100, angleProgress)); // Clamp between 0 and 100
+                angleProgress = Math.max(0, Math.min(100, angleProgress));
                 document.querySelector('.angle-fill').style.width = `${angleProgress}%`;
                 
                 if (movementRange > threshold.minMovement) {
-                    if (this.stage === 'up' && smoothedAngle < (threshold.angleDown + 5)) { // Note: logic uses angleDown + 5
+                    if (this.stage === 'up' && smoothedAngle < (threshold.angleDown + 5)) {
                         this.stage = 'down';
                         this.repStartTime = Date.now();
                         document.querySelector('.stage').textContent = 'Going Down...';
                         document.querySelector('.stage').className = 'stage down';
                         this.playSound(440, 0.1);
-                    } else if (this.stage === 'down' && smoothedAngle > (threshold.angleUp - 5)) { // Note: logic uses angleUp - 5
+                    } else if (this.stage === 'down' && smoothedAngle > (threshold.angleUp - 5)) {
                         this.stage = 'up';
                         this.exerciseCount++;
                         this.lastRepTime = (Date.now() - this.repStartTime) / 1000;
@@ -1204,7 +2346,6 @@
                 const feetAreApart = feetWidth > shoulderWidth * threshold.feetApartRatio;
                 const feetAreTogether = feetWidth < shoulderWidth * threshold.feetTogetherRatio;
 
-                // Update UI visualization
                 const stanceProgress = Math.min(100, (feetWidth / (shoulderWidth * 1.5)) * 100);
                 document.querySelector('.angle-fill').style.width = `${stanceProgress}%`;
 
@@ -1305,7 +2446,17 @@
             }
             
             reset() {
+                // Stop timer if running
+                if (this.timerRunning) {
+                    clearInterval(this.timerInterval);
+                    this.timerRunning = false;
+                    this.sessionStarted = false;
+                    document.getElementById('timerBtn').textContent = '🚀 Start Timer';
+                    document.getElementById('timerBtn').style.pointerEvents = 'auto';
+                }
+
                 this.exerciseCount = 0;
+                this.timeLeft = 60;
                 this.stage = (this.exerciseMode === 'situp' || this.exerciseMode === 'jumpingjack') ? 'down' : 'up';
                 this.angleBuffer = [];
                 this.movementBuffer = [];
@@ -1314,6 +2465,8 @@
                 this.previousFormError = null;
                 
                 document.querySelector('.count').textContent = '0';
+                document.getElementById('timer').textContent = '60s';
+                document.getElementById('timer').classList.remove('warning');
                 document.querySelector('.stage').textContent = 'Ready to Start';
                 document.querySelector('.stage').className = 'stage';
                 document.getElementById('formQuality').textContent = '--';
@@ -1335,21 +2488,22 @@
                 
                 try {
                     await this.setupCamera();
+                    this.speak("Camera switched", true);
                 } catch (e) {
-                    // Error already handled in setupCamera
+                    this.speak("Camera switch failed", true);
                 }
             }
             
             toggleSound() {
                 this.soundEnabled = !this.soundEnabled;
                 const soundBtn = document.getElementById('soundBtn');
-                soundBtn.textContent = `Sound: ${this.soundEnabled ? 'ON' : 'OFF'}`;
+                soundBtn.textContent = `${this.soundEnabled ? '🔊' : '🔇'} Sound: ${this.soundEnabled ? 'ON' : 'OFF'}`;
                 soundBtn.classList.toggle('active', this.soundEnabled);
 
                 if (!this.soundEnabled && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
                     window.speechSynthesis.cancel(); 
                 } else if (this.soundEnabled) {
-                    this.speak("Sound on", false);
+                    this.speak("Sound activated", false);
                     if (this.audioContext && this.audioContext.state === 'suspended') {
                         this.audioContext.resume().catch(e => console.warn("Could not resume audio context:", e));
                     }
@@ -1360,16 +2514,22 @@
                 this.performanceMode = !this.performanceMode;
                 document.getElementById('performanceMode').style.display = 
                     this.performanceMode ? 'block' : 'none';
+                    
+                if (this.performanceMode) {
+                    this.speak("Performance monitoring enabled", true);
+                } else {
+                    this.speak("Performance monitoring disabled", true);
+                }
             }
             
             showError(message) {
                 const loadingDiv = document.getElementById('loading');
                 loadingDiv.innerHTML = `
                     <div class="error">
-                        <h3>⚠️ Error</h3>
+                        <h3>⚠️ System Error</h3>
                         <p>${message}</p>
-                        <button onclick="location.reload()" style="margin-top: 20px;">
-                            Reload Page
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 15px 30px; background: #ff6b6b; border: none; border-radius: 10px; color: white; font-weight: 600; cursor: pointer;">
+                            🔄 Reload Application
                         </button>
                     </div>
                 `;
@@ -1382,6 +2542,12 @@
             cleanup() {
                 if (this.animationId) {
                     cancelAnimationFrame(this.animationId);
+                }
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                if (this.voiceEnabled && this.recognition) {
+                    this.recognition.stop();
                 }
                 if (this.video && this.video.srcObject) {
                     this.video.srcObject.getTracks().forEach(track => track.stop());
@@ -1401,6 +2567,80 @@
             exerciseCounter.init();
         });
         window.addEventListener('beforeunload', () => exerciseCounter.cleanup());
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                exerciseCounter.closeModal();
+                exerciseCounter.closeLeaderboard();
+            }
+        });
+
+        // Enter key support for name input and better modal handling
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('scoreModal').style.display === 'block') {
+                e.preventDefault();
+                exerciseCounter.saveScore();
+            }
+            
+            // Escape key to close modals
+            if (e.key === 'Escape') {
+                if (document.getElementById('scoreModal').style.display === 'block') {
+                    exerciseCounter.skipScore();
+                } else if (document.getElementById('leaderboardModal').style.display === 'block') {
+                    exerciseCounter.closeLeaderboard();
+                }
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Prevent shortcuts when typing in input fields
+            if (e.target.tagName === 'INPUT') return;
+            
+            switch(e.key.toLowerCase()) {
+                case ' ': // Spacebar to start timer
+                    e.preventDefault();
+                    if (!exerciseCounter.timerRunning) {
+                        exerciseCounter.startTimer();
+                    }
+                    break;
+                case 'r': // R to reset
+                    exerciseCounter.reset();
+                    break;
+                case 'v': // V to toggle voice
+                    exerciseCounter.toggleVoiceCommands();
+                    break;
+                case 'h': // H to show high scores
+                    exerciseCounter.showLeaderboard();
+                    break;
+                case 's': // S to toggle sound
+                    exerciseCounter.toggleSound();
+                    break;
+                case 'c': // C to switch camera
+                    exerciseCounter.toggleCamera();
+                    break;
+                case '1': // Number keys to switch exercises
+                    exerciseCounter.setExerciseByVoice('pushup');
+                    break;
+                case '2':
+                    exerciseCounter.setExerciseByVoice('situp');
+                    break;
+                case '3':
+                    exerciseCounter.setExerciseByVoice('squat');
+                    break;
+                case '4':
+                    exerciseCounter.setExerciseByVoice('jumpingjack');
+                    break;
+            }
+        });
+
+        // Show keyboard shortcuts on first load
+        setTimeout(() => {
+            if (exerciseCounter.soundEnabled) {
+                exerciseCounter.speak("Pro tip: Use spacebar to start timer, R to reset, V for voice commands, or H for high scores!", false);
+            }
+        }, 3000);
     </script>
 </body>
 </html>

@@ -1,60 +1,305 @@
-# 🤖 AI Fitness Counter
+# STF AI(爱) Exercise Counter
 
-An advanced, browser-based AI fitness application that uses your webcam to count push-ups, sit-ups, squats, and jumping jacks in real-time. It leverages TensorFlow.js and the MoveNet model to provide accurate repetition counting, form analysis, and real-time feedback to help you improve your workout.
+> 🚀 **AI-Powered Fitness Companion with Real-Time Pose Detection, Voice Commands & Competitive Leaderboards**
 
-## ✨ Features
+[![Demo](https://img.shields.io/badge/Demo-Live-green.svg)](https://your-github-pages-url.github.io)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Firebase](https://img.shields.io/badge/Database-Firebase-orange.svg)](https://firebase.google.com/)
+[![TensorFlow.js](https://img.shields.io/badge/AI-TensorFlow.js-yellow.svg)](https://www.tensorflow.org/js)
 
--   **🤸 Multi-Exercise Tracking:** Accurately counts repetitions for four different exercises:
-    -   Push-ups
-    -   Sit-ups
-    -   Squats
-    -   **New!** Jumping Jacks
--   **📈 Real-Time Repetition Counting:** Uses a sophisticated state machine to count reps based on joint angles and body position.
--   **🧐 Advanced Form Analysis:** Provides real-time feedback on your form, identifying common mistakes.
--   **🎨 Intuitive UI:** A clean, modern interface displays your rep count, current stage, form quality, and rep time.
--   **🗣️ Voice Feedback:** Provides audio cues for rep counts and form corrections, so you don't have to look at the screen.
--   **⚡ Performance Optimized:** Implements frame skipping and other optimizations to run smoothly on a variety of devices.
--   **🌐 Cross-Platform:** Runs entirely in the browser, requiring no installation. Works on desktops, laptops, and mobile devices.
+## 🎯 Overview
 
-## ⚙️ How It Works
+STF AI Exercise Counter is a cutting-edge fitness application that uses computer vision and AI to automatically count and analyze your exercises in real-time. With voice command support, competitive leaderboards, and professional form analysis, it's like having a personal trainer right in your browser!
 
-The application captures video from your webcam and feeds it into the **MoveNet.SinglePose (Lightning)** model, which is a highly optimized pose estimation model from TensorFlow.js.
+### ✨ Key Features
 
-1.  **Pose Estimation:** For each frame, MoveNet identifies 17 key body points (joints like shoulders, elbows, hips, knees, etc.).
-2.  **Exercise-Specific Logic:** Based on the selected exercise, a dedicated function analyzes the keypoints for that specific movement.
-3.  **State Machine:** A state machine tracks whether you are in the "up" or "down" phase of an exercise. A repetition is counted only when a full transition is completed.
-4.  **Form Analysis:** A separate set of functions analyzes your posture against a set of rules for good form, providing corrective feedback if you deviate.
-5.  **UI Rendering:** The results are displayed in a user-friendly interface, with the skeleton drawn on the canvas and key metrics updated in real-time.
+🎥 **Real-Time Pose Detection** - Advanced AI tracks your movements with precision  
+🎤 **Voice Commands** - Complete hands-free operation  
+🏆 **Global Leaderboards** - Compete with others worldwide  
+📊 **Form Analysis** - Real-time feedback on exercise technique  
+⏱️ **60-Second Challenges** - Timed workouts for maximum motivation  
+📱 **Mobile Optimized** - Works perfectly on all devices  
+🎨 **Modern UI** - Stunning glassmorphism design with animations  
 
-###🤸‍♂️ Jumping Jack Detection Explained
+## 🏋️ Supported Exercises
 
-The jumping jack counter is designed to be robust by tracking both arm and leg movement.
+| Exercise | Key Points Tracked | Form Analysis |
+|----------|-------------------|---------------|
+| **💪 Push-ups** | Elbow angles, body alignment | Shoulder level, hip alignment, straight body |
+| **🔥 Sit-ups** | Torso angle, knee position | Bent knees, hand positioning |
+| **🏋️ Squats** | Knee angles, back posture | Knee alignment, back straightness, feet positioning |
+| **⚡ Jumping Jacks** | Arm/leg coordination | Arm height, feet spacing |
 
--   **Stance Quantification:** The app measures your stance by calculating the ratio of the distance between your ankles to the distance between your shoulders. This allows it to adapt to different body sizes and camera distances.
--   **What Counts as 1 Rep:** A single repetition is counted after you successfully complete the full sequence:
-    1.  **Start (Down State):** Feet together and arms by your sides.
-    2.  **Movement (Up State):** You jump to a state where your feet are wide apart and your arms are raised above your shoulders.
-    3.  **Completion (Return to Down State):** You return to the starting position with feet together and arms down. The count is incremented upon returning to this state.
+## 🚀 Quick Start
 
-## 💻 Tech Stack
+### 1. Clone & Deploy
+```bash
+git clone https://github.com/yourusername/stf-ai-exercise-counter.git
+cd stf-ai-exercise-counter
+```
 
--   **TensorFlow.js:** For running the machine learning model in the browser.
--   **MoveNet (from TensorFlow Hub):** A fast and accurate pose estimation model.
--   **HTML5/CSS3/JavaScript:** For the application structure, styling, and logic.
--   **WebRTC (getUserMedia):** To access the webcam feed.
--   **Web Audio API & SpeechSynthesis API:** For sound effects and voice feedback.
+### 2. Firebase Setup (Required for High Scores)
 
-## 🚀 How to Use
+1. **Create Firebase Project:**
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Create a new project
+   - Enable Firestore Database
 
-1.  **Open the `index.html` file** in a modern web browser (like Chrome, Firefox, or Edge).
-2.  **Grant Camera Permission:** The browser will ask for permission to access your camera. Please allow it.
-3.  **Select an Exercise:** Click on one of the exercise buttons at the top right.
-4.  **Position Yourself:** Stand back from the camera so the model can see the relevant parts of your body for the selected exercise.
-5.  **Start Working Out!** The app will begin counting your reps and providing feedback automatically.
+2. **Configure Database:**
+   ```javascript
+   // In Firebase Console > Firestore Database
+   // Create collection: "highscores"
+   // Security Rules:
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /highscores/{document} {
+         allow read, write: if true;
+       }
+     }
+   }
+   ```
 
-## 🎛️ Controls
+3. **Get Configuration:**
+   - Project Settings → General → Your apps → Web app
+   - Copy the config object
 
--   **Reset Count:** Resets the counter for the current exercise to zero.
--   **Switch Camera:** Toggles between the front-facing and rear-facing cameras on mobile devices.
--   **Sound ON/OFF:** Enables or disables audio feedback.
--   **Performance:** Toggles a display that shows the current Frames Per Second (FPS) and model latency.
+4. **Update Code:**
+   ```javascript
+   // Replace in the HTML file around line 750
+   const firebaseConfig = {
+     apiKey: "YOUR_API_KEY",
+     authDomain: "YOUR_PROJECT_ID.firebaseapp.com", 
+     projectId: "YOUR_PROJECT_ID",
+     storageBucket: "YOUR_PROJECT_ID.appspot.com",
+     messagingSenderId: "YOUR_SENDER_ID",
+     appId: "YOUR_APP_ID"
+   };
+   ```
+
+### 3. Deploy to GitHub Pages
+
+1. Push to your GitHub repository
+2. Go to Settings → Pages
+3. Select source branch (usually `main`)
+4. Your app will be live at `https://yourusername.github.io/stf-ai-exercise-counter`
+
+## 🎮 How to Use
+
+### Getting Started
+1. **Allow camera access** when prompted
+2. **Position yourself** so your full body is visible
+3. **Select an exercise** from the top-right panel
+4. **Start exercising** - reps are counted automatically!
+
+### Competition Mode
+1. Click **"🚀 Start Timer"** for a 60-second challenge
+2. Complete as many reps as possible
+3. **Enter your name** to save your score
+4. **View leaderboards** to see how you rank globally
+
+## 🎤 Voice Commands
+
+Say these commands out loud (after clicking **"🎤 Voice Control"**):
+
+| Command | Action |
+|---------|--------|
+| `"start timer"` | Begin 60-second challenge |
+| `"reset"` | Reset rep counter |
+| `"push ups"` | Switch to push-ups |
+| `"sit ups"` | Switch to sit-ups |
+| `"squats"` | Switch to squats |
+| `"jumping jacks"` | Switch to jumping jacks |
+| `"high scores"` | Open leaderboards |
+| `"sound on/off"` | Toggle audio feedback |
+| `"help"` | List all available commands |
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Start timer |
+| `R` | Reset counter |
+| `V` | Toggle voice commands |
+| `H` | Show high scores |
+| `S` | Toggle sound |
+| `C` | Switch camera |
+| `1-4` | Select exercise (1=Push-ups, 2=Sit-ups, 3=Squats, 4=Jumping Jacks) |
+| `Enter` | Submit score (in modal) |
+| `Escape` | Close modals |
+
+## 🏆 Leaderboard System
+
+- **Global Rankings** - Separate leaderboards for each exercise
+- **Real-time Updates** - See new scores instantly
+- **Achievement Celebrations** - Special effects for top 3 positions
+- **Personal Highlighting** - Your scores are highlighted and celebrated
+- **Ranking Notifications** - Audio feedback based on your position
+
+## 📱 Browser Compatibility
+
+| Feature | Chrome | Firefox | Safari | Edge |
+|---------|--------|---------|--------|------|
+| **Pose Detection** | ✅ | ✅ | ✅ | ✅ |
+| **Voice Commands** | ✅ | ✅ | ⚠️ Limited | ✅ |
+| **Camera Access** | ✅ | ✅ | ✅ | ✅ |
+| **Audio Feedback** | ✅ | ✅ | ✅ | ✅ |
+| **Firebase Storage** | ✅ | ✅ | ✅ | ✅ |
+
+### Requirements
+- **Camera access** (webcam required)
+- **Modern browser** (ES6+ support)
+- **Internet connection** (for AI model & Firebase)
+- **Microphone access** (optional, for voice commands)
+
+## 🛠️ Technical Architecture
+
+### Core Technologies
+- **TensorFlow.js** - AI pose detection using MoveNet Lightning
+- **Firebase Firestore** - Real-time database for leaderboards
+- **Web Speech API** - Voice command recognition
+- **Canvas API** - Real-time pose visualization
+- **Web Audio API** - Audio feedback and sound effects
+
+### Performance Optimizations
+- **Frame skipping** for low-end devices
+- **Optimized rendering** with Canvas 2D
+- **Efficient pose tracking** with confidence thresholds
+- **Smart buffering** for smooth angle calculations
+- **Responsive design** for all screen sizes
+
+### Security Features
+- **Input validation** for all user data
+- **XSS protection** with proper sanitization
+- **Firebase security rules** for data protection
+- **HTTPS enforcement** for camera access
+
+## 🎨 Customization
+
+### Modify Exercise Thresholds
+```javascript
+// In the thresholds object (around line 880)
+this.thresholds = {
+    pushup: {
+        angleDown: 90,    // Minimum angle for "down" position
+        angleUp: 160,     // Minimum angle for "up" position
+        minMovement: 20   // Minimum movement to register
+    }
+    // ... other exercises
+};
+```
+
+### Customize UI Colors
+```css
+/* Primary accent color */
+:root {
+    --accent-color: #00ff88;
+    --secondary-color: #00d4ff;
+    --warning-color: #ffd700;
+    --error-color: #ff6b6b;
+}
+```
+
+### Add New Exercises
+1. Add to `thresholds` object
+2. Create `analyzeForm[Exercise]()` method
+3. Create `detect[Exercise]()` method
+4. Add to exercise selector UI
+5. Update `detectExercise()` switch statement
+
+## 📊 Analytics & Insights
+
+The app tracks several metrics to help users improve:
+
+- **Rep Count** - Automatic counting with high accuracy
+- **Form Quality** - Real-time score (0-100%) based on technique
+- **Rep Timing** - Time per repetition for consistency tracking
+- **Movement Analysis** - Range of motion and smoothness
+- **Session History** - Performance tracking over time
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Camera not working:**
+- Ensure HTTPS connection (required for camera access)
+- Check browser permissions
+- Try different browsers
+- Restart browser/clear cache
+
+**Pose detection inaccurate:**
+- Ensure good lighting
+- Stand 3-6 feet from camera
+- Wear contrasting colors
+- Check that full body is visible
+
+**Voice commands not responding:**
+- Check microphone permissions
+- Ensure quiet environment
+- Speak clearly and wait for indicator
+- Try refreshing the page
+
+**Scores not saving:**
+- Verify Firebase configuration
+- Check internet connection
+- Ensure Firestore rules allow writes
+- Check browser console for errors
+
+### Performance Issues
+
+**Low frame rate:**
+- Close other browser tabs
+- Lower camera resolution
+- Enable performance mode
+- Use newer device/browser
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork the repository**
+2. **Create a feature branch:** `git checkout -b feature/amazing-feature`
+3. **Make your changes** and test thoroughly
+4. **Commit with clear messages:** `git commit -m 'Add amazing feature'`
+5. **Push to your branch:** `git push origin feature/amazing-feature`
+6. **Open a Pull Request**
+
+### Development Guidelines
+- Follow existing code style and structure
+- Test on multiple browsers and devices
+- Ensure accessibility compliance
+- Add comments for complex algorithms
+- Update documentation for new features
+
+### Areas for Contribution
+- 🏃 **New exercises** (planks, burpees, etc.)
+- 🌐 **Internationalization** (multiple languages)
+- 📈 **Advanced analytics** (charts, progress tracking)
+- 🎮 **Gamification** (achievements, streaks)
+- 🤖 **AI improvements** (better pose detection)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **TensorFlow.js Team** - For the amazing MoveNet model
+- **Firebase Team** - For the real-time database platform
+- **Contributors(KK and KC)** - For making this project better
+- **STF Team** - For inspiration and feedback
+
+## 📞 Support
+
+- **Issues:** [GitHub Issues](https://github.com/yourusername/stf-ai-exercise-counter/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/yourusername/stf-ai-exercise-counter/discussions)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the fitness community**
+
+[⭐ Star this project](https://github.com/yourusername/stf-ai-exercise-counter) | [🐛 Report Bug](https://github.com/yourusername/stf-ai-exercise-counter/issues) | [💡 Request Feature](https://github.com/yourusername/stf-ai-exercise-counter/issues)
+
+</div>
