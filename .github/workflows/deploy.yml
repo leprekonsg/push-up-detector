@@ -34,13 +34,16 @@ jobs:
         
         echo "Found HTML file: $HTML_FILE"
         
-        # Replace placeholders in the HTML file with actual Firebase config
-        sed -i 's/__FIREBASE_API_KEY__/${{ secrets.FIREBASE_API_KEY }}/g' "$HTML_FILE"
-        sed -i 's/__FIREBASE_AUTH_DOMAIN__/${{ secrets.FIREBASE_AUTH_DOMAIN }}/g' "$HTML_FILE"
-        sed -i 's/__FIREBASE_PROJECT_ID__/${{ secrets.FIREBASE_PROJECT_ID }}/g' "$HTML_FILE"
-        sed -i 's/__FIREBASE_STORAGE_BUCKET__/${{ secrets.FIREBASE_STORAGE_BUCKET }}/g' "$HTML_FILE"
-        sed -i 's/__FIREBASE_MESSAGING_SENDER_ID__/${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}/g' "$HTML_FILE"
-        sed -i 's/__FIREBASE_APP_ID__/${{ secrets.FIREBASE_APP_ID }}/g' "$HTML_FILE"
+        # Replace placeholders with actual Firebase config (only in config object, not in conditions)
+        sed -i 's/REPLACE_FIREBASE_API_KEY/${{ secrets.FIREBASE_API_KEY }}/g' "$HTML_FILE"
+        sed -i 's/REPLACE_FIREBASE_AUTH_DOMAIN/${{ secrets.FIREBASE_AUTH_DOMAIN }}/g' "$HTML_FILE"
+        sed -i 's/REPLACE_FIREBASE_PROJECT_ID/${{ secrets.FIREBASE_PROJECT_ID }}/g' "$HTML_FILE"
+        sed -i 's/REPLACE_FIREBASE_STORAGE_BUCKET/${{ secrets.FIREBASE_STORAGE_BUCKET }}/g' "$HTML_FILE"
+        sed -i 's/REPLACE_FIREBASE_MESSAGING_SENDER_ID/${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}/g' "$HTML_FILE"
+        sed -i 's/REPLACE_FIREBASE_APP_ID/${{ secrets.FIREBASE_APP_ID }}/g' "$HTML_FILE"
+        
+        # Now restore the condition placeholder (since sed replaced ALL instances)
+        sed -i 's/ !== "${{ secrets.FIREBASE_API_KEY }}"/ !== "REPLACE_FIREBASE_API_KEY"/g' "$HTML_FILE"
         
         # Rename to index.html if it's not already
         if [ "$HTML_FILE" != "./index.html" ]; then
@@ -54,8 +57,17 @@ jobs:
         ls -la
         echo ""
         echo "=== Checking if Firebase config was properly injected ==="
-        if grep -q "__FIREBASE_API_KEY__" index.html; then
-          echo "❌ ERROR: Firebase placeholders were not replaced!"
+        
+        # Check if config object still has placeholders (bad)
+        CONFIG_CHECK=$(grep -A 10 'window\.firebaseConfig = {' index.html | grep -c 'REPLACE_FIREBASE')
+        # Check if condition has placeholder (good)
+        CONDITION_CHECK=$(grep -c 'REPLACE_FIREBASE_API_KEY' index.html)
+        
+        echo "Config placeholders remaining: $CONFIG_CHECK"
+        echo "Condition placeholders remaining: $CONDITION_CHECK"
+        
+        if [ "$CONFIG_CHECK" -gt 1 ]; then
+          echo "❌ ERROR: Firebase placeholders were not replaced in config object!"
           echo "Please check if your GitHub Secrets are properly set."
           echo ""
           echo "Current secrets status:"
@@ -63,14 +75,15 @@ jobs:
           echo "FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN != '' && 'SET' || 'NOT SET' }}"
           echo "FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID != '' && 'SET' || 'NOT SET' }}"
           exit 1
+        elif [ "$CONDITION_CHECK" -eq 1 ]; then
+          echo "✅ Firebase configuration successfully injected (condition preserved)"
         else
-          echo "✅ Firebase configuration successfully injected into HTML"
+          echo "⚠️ Unexpected result - manual check needed"
         fi
         
         echo ""
-        echo "=== Firebase config section in HTML (first 20 lines) ==="
-        grep -A 10 -B 2 "window.firebaseConfig" index.html || echo "Config section not found, showing file structure:"
-        head -30 index.html
+        echo "=== Firebase config section in HTML ==="
+        grep -A 12 -B 2 "window.firebaseConfig" index.html
     
     - name: Setup Pages
       uses: actions/configure-pages@v4

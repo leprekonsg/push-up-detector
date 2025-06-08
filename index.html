@@ -1026,12 +1026,12 @@
     <script>
         // Firebase configuration - placeholders will be replaced by GitHub Actions
         window.firebaseConfig = {
-            apiKey: "__FIREBASE_API_KEY__",
-            authDomain: "__FIREBASE_AUTH_DOMAIN__",
-            projectId: "__FIREBASE_PROJECT_ID__",
-            storageBucket: "__FIREBASE_STORAGE_BUCKET__",
-            messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
-            appId: "__FIREBASE_APP_ID__"
+            apiKey: "REPLACE_FIREBASE_API_KEY",
+            authDomain: "REPLACE_FIREBASE_AUTH_DOMAIN",
+            projectId: "REPLACE_FIREBASE_PROJECT_ID",
+            storageBucket: "REPLACE_FIREBASE_STORAGE_BUCKET",
+            messagingSenderId: "REPLACE_FIREBASE_MESSAGING_SENDER_ID",
+            appId: "REPLACE_FIREBASE_APP_ID"
         };
     </script>
     
@@ -1039,14 +1039,15 @@
         // Initialize Firebase
         let db = null;
         try {
-            // Check if config was properly injected
-            if (window.firebaseConfig && window.firebaseConfig.apiKey !== "__FIREBASE_API_KEY__") {
+            // Check if config was properly injected (check if placeholder was replaced)
+            if (window.firebaseConfig && window.firebaseConfig.apiKey !== "REPLACE_FIREBASE_API_KEY") {
                 firebase.initializeApp(window.firebaseConfig);
                 db = firebase.firestore();
                 console.log('✅ Firebase initialized successfully for project:', window.firebaseConfig.projectId);
             } else {
                 console.warn('⚠️ Firebase configuration not loaded - running in demo mode');
                 console.warn('This means GitHub Actions did not inject the Firebase credentials properly.');
+                console.warn('Current apiKey value:', window.firebaseConfig.apiKey);
                 // Add visual indicator for demo mode
                 const demoNotice = document.createElement('div');
                 demoNotice.style.cssText = `
