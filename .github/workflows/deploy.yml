@@ -4,9 +4,18 @@ on:
   push:
     branches: [ main ]
 
+# Required permissions for GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - name: Checkout code
@@ -19,6 +28,7 @@ jobs:
         
         if [ -z "$HTML_FILE" ]; then
           echo "❌ ERROR: No HTML file found in repository!"
+          ls -la
           exit 1
         fi
         
@@ -34,12 +44,15 @@ jobs:
         
         # Rename to index.html if it's not already
         if [ "$HTML_FILE" != "./index.html" ]; then
-          mv "$HTML_FILE" index.html
-          echo "Renamed $HTML_FILE to index.html"
+          cp "$HTML_FILE" index.html
+          echo "Copied $HTML_FILE to index.html"
         fi
     
     - name: Verify Firebase configuration was injected
       run: |
+        echo "=== Files in directory ==="
+        ls -la
+        echo ""
         echo "=== Checking if Firebase config was properly injected ==="
         if grep -q "__FIREBASE_API_KEY__" index.html; then
           echo "❌ ERROR: Firebase placeholders were not replaced!"
@@ -55,19 +68,24 @@ jobs:
         fi
         
         echo ""
-        echo "=== Firebase config section in HTML ==="
-        grep -A 8 -B 2 "window.firebaseConfig" index.html || echo "Config section not found"
+        echo "=== Firebase config section in HTML (first 20 lines) ==="
+        grep -A 10 -B 2 "window.firebaseConfig" index.html || echo "Config section not found, showing file structure:"
+        head -30 index.html
     
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        personal_token: ${{ secrets.PERSONAL_TOKEN }}
-        publish_dir: ./
-        force_orphan: true
-        keep_files: false
+        path: './'
         
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      
     - name: Deployment Success
       if: success()
       run: |
         echo "🚀 Deployment successful!"
-        echo "Your app will be available at: https://leprekonsg.github.io/push-up-detector"
+        echo "Your app is available at: ${{ steps.deployment.outputs.page_url }}"

@@ -1024,7 +1024,7 @@
     
     <!-- Firebase Configuration (will be injected by GitHub Actions) -->
     <script>
-        // Firebase configuration - will be replaced by GitHub Actions
+        // Firebase configuration - placeholders will be replaced by GitHub Actions
         window.firebaseConfig = {
             apiKey: "__FIREBASE_API_KEY__",
             authDomain: "__FIREBASE_AUTH_DOMAIN__",
@@ -1043,13 +1043,22 @@
             if (window.firebaseConfig && window.firebaseConfig.apiKey !== "__FIREBASE_API_KEY__") {
                 firebase.initializeApp(window.firebaseConfig);
                 db = firebase.firestore();
-                console.log('Firebase initialized successfully for project:', window.firebaseConfig.projectId);
+                console.log('✅ Firebase initialized successfully for project:', window.firebaseConfig.projectId);
             } else {
-                console.warn('Firebase configuration not loaded - running in demo mode');
-                // You can add a fallback or demo mode here
+                console.warn('⚠️ Firebase configuration not loaded - running in demo mode');
+                console.warn('This means GitHub Actions did not inject the Firebase credentials properly.');
+                // Add visual indicator for demo mode
+                const demoNotice = document.createElement('div');
+                demoNotice.style.cssText = `
+                    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+                    background: rgba(255, 193, 7, 0.9); color: black; padding: 10px 20px;
+                    border-radius: 8px; z-index: 10000; font-weight: bold;
+                `;
+                demoNotice.textContent = '⚠️ Demo Mode - High Scores Disabled';
+                document.body.appendChild(demoNotice);
             }
         } catch (error) {
-            console.warn('Firebase initialization failed:', error);
+            console.warn('❌ Firebase initialization failed:', error);
         }
 
         class ExerciseCounter {
